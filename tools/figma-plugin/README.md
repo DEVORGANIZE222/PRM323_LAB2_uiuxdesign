@@ -4,11 +4,14 @@ Plugin dựng phần Figma sau trong file của nhóm:
 
 | Bước (menu plugin) | Tạo ra |
 |---|---|
-| **1 · Design System (trang 04)** | 83 Variables (Color · Light, Spacing, Radius, Size, Typography, Elevation), 7 text style và 3 effect style gắn với biến, bảng tài liệu trên trang `04 Design System` (swatch kèm tỉ lệ tương phản, bảng màu đã sửa, type scale, spacing, radius, elevation, touch target) |
-| **2 · Components (trang 05)** | 9 component bắt buộc + component phụ, tất cả Auto Layout + variant, mọi fill/stroke/padding/gap/radius/size đều bind vào biến |
-| **3 · Final UI SCR_06 → SCR_09 (trang 03)** | 24 frame 360 × 800 (màn + từng state đặt cạnh nhau) và 4 frame kiểm tra ở 412 dp, dựng hoàn toàn bằng instance của trang 05 |
+| **1 · Design System (trang 04)** | 86 Variables (Color · Light, Spacing, Radius, Size, Typography, Elevation), 7 text style, 3 effect style gắn với biến, bảng tài liệu kèm tỉ lệ tương phản |
+| **2 · Components (trang 05)** | 9 component bắt buộc và các component phụ (Badge, Banner, Chip, Progress, Tabs, Snackbar…), tất cả Auto Layout + variant, gắn biến |
+| **3 · Final UI (trang 03)** | SCR_01 → SCR_09 với 44 trạng thái và 9 frame kiểm tra 412 dp, toàn bộ là instance |
+| **4 · User Flow (trang 01)** | 3 flow (đường chính / thay thế / lỗi–khôi phục), mỗi bước link tới màn hình, kèm bảng flow → màn |
+| **5 · Wireframe (trang 02)** | Bản xám low-fi của 9 màn |
+| **6 · Prototype (trang 06)** | Flow 1, 2, 3, 3b bấm được, có điểm bắt đầu, dialog overlay, loading → kết quả, Back |
 
-Plugin tự tạo đủ 6 trang theo đúng thứ tự `01 User Flow … 06 Prototype`. Nó không đụng vào nội dung các trang khác đã có sẵn. Trên trang 03, section của SCR_06–09 được đặt bên phải phần SCR_01–05 của các bạn khác.
+Chạy theo thứ tự 1 → 6. Nếu chạy lại bước 3 (màn hình được dựng lại, ID đổi), hãy chạy lại cả 4, 5 và 6 để link và prototype trỏ đúng frame mới.
 
 ## Cách chạy
 

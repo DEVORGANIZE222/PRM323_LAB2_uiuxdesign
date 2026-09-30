@@ -3,6 +3,7 @@
 ## 1. AI Tool Disclosure
 - **Google Stitch / Gemini 1.5 Pro:** Used for initial mobile UI layout generation and rapid visual prototyping of the 3 primary flows.
 - **Antigravity AI (Claude 3.7 Sonnet / Gemini):** Used for UX analysis, Nielsen heuristic evaluation, WCAG 2.1 contrast audits, and Flutter handoff mapping.
+- **Claude Code (Anthropic, Claude Opus 5.5):** wrote the Figma plugin in `tools/figma-plugin/`, which builds the Variables, components, final screens, wireframes, flows and prototype. It also measured WCAG contrast and target sizes in the Figma file, ran critique round 2 (§7), and rewrote `user-flow.md`, `screen-spec.md`, `design-decisions.md` and `flutter-handoff.md` to match the Figma file. Every decision in §8 was reviewed by the team.
 
 ---
 
@@ -101,3 +102,63 @@ Screens to Generate (Flow 1 & Flow 3):
 | **F-03** | **ACCEPTED** | Added a persistent Status Pill on `SCR_05`: Yellow badge with clock icon ⏳ *"Pending Leader Review (Submitted 2h ago)"*. | **Heuristic #1 (Visibility of System Status):** Eliminates user anxiety and prevents duplicate join requests. |
 | **F-04** | **MODIFIED** | Instead of an inline text link, converted "Change Vote" into an Outlined Button with padding `12dp 16dp` and min-height `48dp`, but only showed it when the election window was still open. | **Touch target compliance & Business Rule:** FPT academic guidelines lock individual votes once 100% of team members have cast their ballots. |
 | **F-05** | **ACCEPTED** | Replaced static date with a Dynamic Countdown Card: Large bold text **"⏳ 2 Days 14 Hours Left"** with color-changing logic (Turns warning orange #B26A00 at < 48 hours). | **Persona & Heuristic #6:** Minh has a hectic schedule; seeing an explicit countdown prevents missing the deadline. |
+
+---
+
+## 6. Stitch session in our own project (evidence)
+
+Project: *Remix of CapstoneMatch UI Design* (`stitch.withgoogle.com/projects/3478201953325536957`). The prompts to run are in `tools/stitch-session.md`. Screenshots go into `assets/stitch/`.
+
+| Step | Named problem | Prompt (verbatim, as sent) | What Stitch returned | Screenshots |
+|---|---|---|---|---|
+| 0 · Initial | — | §2 above | Browse Groups and My Group Hub screens plus the design-system card | [`initial_generation.png`](../assets/stitch/initial_generation.png) |
+| 1 · Generate SCR_06, SCR_07 | Screens for Flows 2 and 3 were missing | _paste_ | _to fill_ | `01-generated-*.png` |
+| Iteration 1 | Primary button contrast 2.95:1 | _paste_ | _to fill_ | `it1-before-browse.png`, `it1-after-browse.png` |
+| Iteration 2 | No error or recovery state for fewer than 4 members | _paste_ | _to fill_ | `it2-before-scr07.png`, `it2-after-scr07.png` |
+| Iteration 3 | Small radio targets; tallies bias the vote | _paste_ | _to fill_ | `it3-before-scr06.png`, `it3-after-scr06.png` |
+
+---
+
+## 7. AI critique, round 2 (Claude, on the Figma final UI)
+
+Tool: Claude Code (Claude Opus 5.5). Input: Figma page 03 (all nine screens and their states) as rendered PNG exports.
+
+### Prompt (verbatim)
+
+```text
+You are a senior mobile UX reviewer. Review the CapstoneMatch final UI in Figma (page 03, nine screens SCR_01–SCR_09 at 360 × 800 dp, all state variants) against:
+1. Nielsen's 10 usability heuristics,
+2. WCAG 2.1 AA basics (contrast, target size, use of color),
+3. the persona: Minh, 20, FPT SE student, Android phone, one-handed use on the bus and in campus sunlight, mild astigmatism, under deadline pressure.
+Give at least 5 findings. For each finding name the screen and state, the heuristic or criterion, what you observed, why it matters for Minh, a severity (High/Medium/Low) and one concrete recommendation. Do not report things that already work; mention strengths only at the end in one line.
+```
+
+### Answer (verbatim)
+
+| # | Screen / state | Heuristic / criterion | Observation | Why it matters for Minh | Severity | Recommendation |
+|---|---|---|---|---|---|---|
+| C-01 | SCR_06 Default, Selected | H2 Match with the real world, persona (fair election) | Vote tallies ("1 vote", "0 votes") are visible **before** Minh has voted. | Seeing who is ahead before voting nudges him toward the front-runner (bandwagon effect). The persona goal is a transparent, fair election. | Medium | Hide tallies until the user has submitted a vote; show "2 of 4 members have voted" only. |
+| C-02 | SCR_03 Populated | H1 Visibility of system status, H6 Recognition rather than recall | The filter chip row is cut off at the right edge ("Web" is half visible) with no sign that it scrolls. | With one hand on a moving bus Minh will not discover the hidden chips, so he may miss the "Web" filter. | Medium | Let the chips wrap onto a second line (there are only 4), or add an edge fade and a "More filters" chip. |
+| C-03 | SCR_02 all states | H8 Aesthetic and minimalist design, H4 Consistency | The app bar has a bell icon that duplicates the Alerts tab in the bottom navigation, and a profile icon that leads nowhere in the flows. | Two routes to the same place plus a dead icon add noise to the most-visited screen; the profile icon is a dead end. | Low | Remove both app-bar actions on Home; keep the Alerts tab as the single entry point. |
+| C-04 | SCR_09 all states | H6 Recognition rather than recall, WCAG 1.1.1 / 4.1.2 (name of control) | "Mark all as read" is an icon-only double-check glyph without a label. | The double-check glyph is ambiguous (read? done? synced?). A screen reader user gets no name. | Low | Add a tooltip and an accessible label ("Mark all as read"), or use a text button. |
+| C-05 | SCR_05 Joined · no leader yet | H5 Error prevention | "Leave Group" is a text button directly under the primary "Vote for Leader" in the thumb zone. | A slip of the thumb on a destructive action; leaving a team two days before the deadline is costly. | Medium | Move Leave Group to an overflow menu, or at least require a destructive confirmation dialog. |
+| C-06 | SCR_07 Ready (4 of 5) | H1 Visibility of system status | At 360 × 800 the 4th member is below the fold, so the leader locks an irreversible roster without seeing every name. | Minh (or Ha) might lock without noticing a wrong member. | Medium | Show a compact roster (names only) or a summary line "4 members: Ha, Minh, Bao, Huy" above the button. |
+| C-07 | SCR_08 In progress | H8 Minimalism | A manual "Refresh Status" button is primary although the screen auto-checks every 30 s. | Two ways to refresh compete for attention; the primary slot could hold the more useful action. | Low | Make Refresh secondary (or remove it) and rely on auto-check. |
+
+Strengths: one clear primary action per screen, pinned in the thumb zone; error states explain the cause in plain language and always offer a way forward; every status badge pairs an icon with text.
+
+---
+
+## 8. Decision record, round 2
+
+| Finding | Decision | What changed in Figma | Reason (persona / heuristic / constraint) |
+|---|---|---|---|
+| **C-01** Tallies visible before voting | **ACCEPTED** | SCR_06 Default / Selected / Submitting show no tallies; they appear only in Submitted. | **Persona goal "transparent, fair election"** and H2: seeing the front-runner before voting biases the choice. |
+| **C-02** Chip row cut off | **ACCEPTED** | SCR_03 chips wrap onto a second line; "Web" is fully visible. | **H1 / H6:** with only 4 filters, wrapping costs one line and removes a hidden-scroll affordance that Minh would miss one-handed. |
+| **C-03** Duplicate bell, dead profile icon on Home | **ACCEPTED** | SCR_02 uses App Bar `Default` (no actions). | **H8 minimalism and H4 consistency:** the Alerts tab is the one entry point; the profile icon led nowhere (a dead end). |
+| **C-04** Icon-only "Mark all read" | **MODIFIED** | Icon kept; the handoff requires `tooltip: 'Mark all as read'` (also the accessible name). | **Constraint:** at 360 dp the title "Notifications" plus a text button would truncate the title. A tooltip and semantic label fix the naming problem (WCAG 4.1.2) without the layout cost. |
+| **C-05** Leave Group next to the primary action | **MODIFIED** | Leave Group stays visible but opens a Destructive dialog "Leave Team AI-04?" (new SCR_05 state "Leave dialog"). | **H5 error prevention** is met by the confirmation. Hiding the action in an overflow menu would hurt **H6** for a student who really needs to leave before the deadline. |
+| **C-06** 4th member below the fold before locking | **MODIFIED** | SCR_07 Ready: the hint above Lock reads "Locking: Ha (leader), Minh, Bao, Huy". | **H1:** the leader sees every name next to the irreversible button. Making the cards smaller instead would break the 72 dp card and readability rules (persona: astigmatism). |
+| **C-07** Manual Refresh competes with auto-check | **REJECTED** | No change. | **H3 user control and freedom and the persona's deadline anxiety:** the auto-check is invisible, and a visible "check now" reassures Minh. It is the only action on the screen that moves him forward. |
+
+Figma version history shows this round as two named versions, *"Before critique round 2"* and *"Critique round 2 applied"*.
