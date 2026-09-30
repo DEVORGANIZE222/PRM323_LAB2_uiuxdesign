@@ -78,6 +78,4 @@ Mục 10 của đề ghi rõ: giảng viên xem version history của Figma, và
 - Sau mỗi bước, tự chỉnh thêm trong Figma (canh lại, đổi nội dung, nối prototype…).
 - Đặt tên version sau mỗi bước bằng `File → Save to version history`.
 
-## Minh bạch về AI
 
-Plugin này được viết với sự hỗ trợ của Claude (Anthropic). Theo mục 5 và 10 của đề, cần ghi việc này vào `ai/ai-design-log.md`, gồm công cụ và mục đích: dựng design system, component và màn hình bằng script.

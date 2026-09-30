@@ -82,6 +82,16 @@ Screens to Generate (Flow 1 & Flow 3):
 
 ## 4. AI UX Critique (Against 10 Nielsen Heuristics & WCAG 2.1)
 
+### Prompt Sent to AI Assistant (Claude / Gemini):
+```text
+Role: Principal UI/UX Auditor and Accessibility Specialist.
+Context: Review the 9 mobile screens of "CapstoneMatch" designed for Minh (20, FPT Software Engineering senior) under high exam stress and tight deadline constraints.
+Task: Conduct a rigorous heuristic evaluation against Nielsen's 10 Usability Heuristics and WCAG 2.1 AA accessibility guidelines.
+Requirements: Provide at least 5 actionable findings tied directly to specific screen IDs (SCR_01 to SCR_09), indicating Heuristic/Standard violated, exact finding description, and severity rating (High / Medium / Low).
+```
+
+### Full Critique Response (Summary Table):
+
 | # | Screen ID | Heuristic / Standard | Finding Description | Severity |
 |---|---|---|---|---|
 | **F-01** | `SCR_07` (Lock Review) | **Heuristic #5: Error Prevention** | The confirmation dialog for locking had a single "OK" button without explaining that locking is irreversible and permanently closes team editing. | **High** |
