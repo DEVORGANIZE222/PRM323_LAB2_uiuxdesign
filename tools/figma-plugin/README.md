@@ -16,6 +16,27 @@ Plugin tự tạo đủ 6 trang theo đúng thứ tự `01 User Flow … 06 Prot
 2. `Menu → Plugins → Development → Import plugin from manifest…` rồi chọn `tools/figma-plugin/manifest.json`.
 3. `Plugins → Development → CapstoneMatch DS Builder` và chạy **lần lượt từng bước 1 → 2 → 3**. Không nên dùng "Chạy cả 3 bước", xem lý do ở dưới.
 
+### Không có Figma desktop: chạy trên Figma web
+
+Figma web cho phép gọi Plugin API qua biến `figma` trong DevTools console. Cách làm:
+
+1. Mở file của nhóm trên figma.com và bấm `F12` → Console.
+2. Dán đoạn dưới đây, đổi `STEP` thành `'tokens'`, `'components'` hoặc `'screens'`, rồi Enter.
+
+Đoạn này nạp `code.js` từ nhánh trên GitHub. Nó phải dùng wrapper vì các thuộc tính của `figma` trên web không cấu hình lại được, nên dùng `Proxy` sẽ báo lỗi.
+
+```js
+const STEP = 'tokens';
+const src = await (await fetch('https://raw.githubusercontent.com/DEVORGANIZE222/PRM323_LAB2_uiuxdesign/feat/figma-design-system-scr06-09/tools/figma-plugin/code.js')).text();
+const real = figma, w = {}, seen = new Set(['command', 'closePlugin']);
+Object.defineProperty(w, 'command', { value: STEP });
+Object.defineProperty(w, 'closePlugin', { value: (m) => console.log(m) });
+for (let o = real; o && o !== Object.prototype; o = Object.getPrototypeOf(o))
+  for (const k of Object.getOwnPropertyNames(o)) if (!seen.has(k)) { seen.add(k);
+    Object.defineProperty(w, k, { get: () => (typeof real[k] === 'function' ? real[k].bind(real) : real[k]) }); }
+new Function('figma', src)(w);
+```
+
 Chạy lại:
 - **Bước 1:** cập nhật giá trị biến tại chỗ, không tạo biến trùng, và dựng lại bảng tài liệu trang 04.
 - **Bước 2:** nếu trang 05 đã có component thì giữ nguyên, để không làm gãy instance mà các màn khác đang dùng. Muốn dựng lại thì xoá board `Components · CapstoneMatch` trước.
