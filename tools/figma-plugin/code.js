@@ -391,11 +391,14 @@ function nested(inst, name) {
   return inst.findOne((n) => n.type === 'INSTANCE' && n.name === name);
 }
 
+const GRID_COLS = {}; // set id -> columns, so the grid can be recomputed once properties hide layers
+
 function combine(list, name, cols) {
   const set = figma.combineAsVariants(list, figma.currentPage);
   set.name = name;
   set.fills = [];
-  gridLayout(set, cols || list.length);
+  GRID_COLS[set.id] = cols || list.length;
+  gridLayout(set, GRID_COLS[set.id]);
   return set;
 }
 
@@ -426,15 +429,23 @@ function insideNestedInstance(node, top) {
 }
 
 // Add a component property to a set and wire it to every matching layer in every variant.
-function wire(owner, propName, type, def, layerName, field) {
+// Wiring an instance-swap property resets every variant's icon to the property default, so
+// each variant's own icon (e.g. Badge Tone=Success → check-circle) is swapped back afterwards;
+// the swap keeps the property link, so that icon becomes the variant's default value.
+async function wire(owner, propName, type, def, layerName, field) {
   const key = owner.addComponentProperty(propName, type, def);
   const variants = owner.type === 'COMPONENT_SET' ? owner.children : [owner];
   for (const v of variants) {
     const layers = v.findAll((n) => n.name === layerName && !insideNestedInstance(n, v));
     for (const l of layers) {
+      const original = field === 'mainComponent' ? await l.getMainComponentAsync() : null;
       const refs = Object.assign({}, l.componentPropertyReferences || {});
       refs[field] = key;
       try { l.componentPropertyReferences = refs; } catch (e) { warn('wire ' + propName + ' on ' + v.name + ': ' + e.message); }
+      if (original) {
+        const now = await l.getMainComponentAsync();
+        if (now && now.id !== original.id) l.swapComponent(original);
+      }
     }
   }
   return key;
@@ -764,7 +775,7 @@ async function buildIconButton() {
     list.push(c);
   }
   const set = combine(list, 'Icon Button');
-  wire(set, 'Icon', 'INSTANCE_SWAP', ICON['arrow-back'].id, 'Icon', 'mainComponent');
+  await wire(set, 'Icon', 'INSTANCE_SWAP', ICON['arrow-back'].id, 'Icon', 'mainComponent');
   C['Icon Button'] = set;
   return set;
 }
@@ -775,7 +786,7 @@ async function buildAvatar() {
   const b = comp('Type=Open slot', { dir: 'h', justify: 'CENTER', align: 'CENTER', radius: 'radius-full', stroke: 'outline', dash: true, w: 'size-avatar', h: 'size-avatar' });
   put(b, icon('add', 'on-surface-variant', 20));
   const set = combine([a, b], 'Avatar');
-  wire(set, 'Initials', 'TEXT', 'NM', 'Initials', 'characters');
+  await wire(set, 'Initials', 'TEXT', 'NM', 'Initials', 'characters');
   C.Avatar = set;
   return set;
 }
@@ -799,9 +810,9 @@ async function buildBadge() {
     list.push(c);
   }
   const set = combine(list, 'Badge', 3);
-  wire(set, 'Label', 'TEXT', 'Badge', 'Label', 'characters');
-  wire(set, 'Show icon', 'BOOLEAN', true, 'Icon', 'visible');
-  wire(set, 'Icon', 'INSTANCE_SWAP', ICON.info.id, 'Icon', 'mainComponent');
+  await wire(set, 'Label', 'TEXT', 'Badge', 'Label', 'characters');
+  await wire(set, 'Show icon', 'BOOLEAN', true, 'Icon', 'visible');
+  await wire(set, 'Icon', 'INSTANCE_SWAP', ICON.info.id, 'Icon', 'mainComponent');
   C.Badge = set;
   return set;
 }
@@ -829,9 +840,9 @@ async function buildButton() {
     }
   }
   const set = combine(list, 'Button', 4);
-  wire(set, 'Label', 'TEXT', 'Button', 'Label', 'characters');
-  wire(set, 'Show icon', 'BOOLEAN', false, 'Icon', 'visible');
-  wire(set, 'Icon', 'INSTANCE_SWAP', ICON.add.id, 'Icon', 'mainComponent');
+  await wire(set, 'Label', 'TEXT', 'Button', 'Label', 'characters');
+  await wire(set, 'Show icon', 'BOOLEAN', false, 'Icon', 'visible');
+  await wire(set, 'Icon', 'INSTANCE_SWAP', ICON.add.id, 'Icon', 'mainComponent');
   C.Button = set;
   return set;
 }
@@ -865,9 +876,9 @@ async function buildTextField() {
     list.push(c);
   }
   const set = combine(list, 'Text Field', 5);
-  wire(set, 'Label', 'TEXT', 'Student code', 'Label', 'characters');
-  wire(set, 'Show leading icon', 'BOOLEAN', false, 'Leading icon', 'visible');
-  wire(set, 'Leading icon', 'INSTANCE_SWAP', ICON.search.id, 'Leading icon', 'mainComponent');
+  await wire(set, 'Label', 'TEXT', 'Student code', 'Label', 'characters');
+  await wire(set, 'Show leading icon', 'BOOLEAN', false, 'Leading icon', 'visible');
+  await wire(set, 'Leading icon', 'INSTANCE_SWAP', ICON.search.id, 'Leading icon', 'mainComponent');
   C['Text Field'] = set;
   return set;
 }
@@ -894,8 +905,9 @@ async function buildCard() {
     const col = frame('Text', { dir: 'v', gap: 'space-4' });
     put(c, col, 'FILL');
     const title = put(col, await text('Nguyen Van Minh', 'subtitle', 'on-surface', { name: 'Title' }), 'FILL'); truncate(title);
-    put(col, await text('SE182044 · Backend', 'body', 'on-surface-variant', { name: 'Subtitle' }), 'FILL');
-    const badge = put(c, use('Badge', { Tone: 'Success' }, { Label: 'Confirmed', Icon: 'check-circle' }, 'Badge')); badge.isExposedInstance = true;
+    const sub = put(col, await text('SE182044 · Backend', 'body', 'on-surface-variant', { name: 'Subtitle' }), 'FILL'); truncate(sub);
+    // Badge sits under the text so long names and roles keep the full width on 360 dp.
+    const badge = put(col, use('Badge', { Tone: 'Success' }, { Label: 'Confirmed', Icon: 'check-circle' }, 'Badge')); badge.isExposedInstance = true;
     try { c.minHeight = 72; } catch (e) { /* older API */ }
     list.push(c);
   }
@@ -942,16 +954,16 @@ async function buildCard() {
     list.push(c);
   }
   const set = combine(list, 'Card', 3);
-  wire(set, 'Title', 'TEXT', 'Nguyen Van Minh', 'Title', 'characters');
-  wire(set, 'Subtitle', 'TEXT', 'Backend · Spring Boot', 'Subtitle', 'characters');
-  wire(set, 'Body', 'TEXT', 'Supporting text', 'Body', 'characters');
-  wire(set, 'Meta', 'TEXT', '1 vote', 'Meta', 'characters');
-  wire(set, 'Time', 'TEXT', '5 min ago', 'Time', 'characters');
-  wire(set, 'Show meta', 'BOOLEAN', true, 'Meta', 'visible');
-  wire(set, 'Show badge', 'BOOLEAN', true, 'Badge', 'visible');
-  wire(set, 'Show actions', 'BOOLEAN', false, 'Actions', 'visible');
-  wire(set, 'Show action', 'BOOLEAN', true, 'Action', 'visible');
-  wire(set, 'Icon', 'INSTANCE_SWAP', ICON['person-add'].id, 'Leading icon', 'mainComponent');
+  await wire(set, 'Title', 'TEXT', 'Nguyen Van Minh', 'Title', 'characters');
+  await wire(set, 'Subtitle', 'TEXT', 'Backend · Spring Boot', 'Subtitle', 'characters');
+  await wire(set, 'Body', 'TEXT', 'Supporting text', 'Body', 'characters');
+  await wire(set, 'Meta', 'TEXT', '1 vote', 'Meta', 'characters');
+  await wire(set, 'Time', 'TEXT', '5 min ago', 'Time', 'characters');
+  await wire(set, 'Show meta', 'BOOLEAN', true, 'Meta', 'visible');
+  await wire(set, 'Show badge', 'BOOLEAN', true, 'Badge', 'visible');
+  await wire(set, 'Show actions', 'BOOLEAN', false, 'Actions', 'visible');
+  await wire(set, 'Show action', 'BOOLEAN', true, 'Action', 'visible');
+  await wire(set, 'Icon', 'INSTANCE_SWAP', ICON['person-add'].id, 'Leading icon', 'mainComponent');
   C.Card = set;
   return set;
 }
@@ -970,10 +982,10 @@ async function buildBanner() {
     list.push(c);
   }
   const set = combine(list, 'Banner', 2);
-  wire(set, 'Title', 'TEXT', 'Title', 'Title', 'characters');
-  wire(set, 'Body', 'TEXT', 'Supporting message in plain language.', 'Body', 'characters');
-  wire(set, 'Show body', 'BOOLEAN', true, 'Body', 'visible');
-  wire(set, 'Icon', 'INSTANCE_SWAP', ICON.info.id, 'Icon', 'mainComponent');
+  await wire(set, 'Title', 'TEXT', 'Title', 'Title', 'characters');
+  await wire(set, 'Body', 'TEXT', 'Supporting message in plain language.', 'Body', 'characters');
+  await wire(set, 'Show body', 'BOOLEAN', true, 'Body', 'visible');
+  await wire(set, 'Icon', 'INSTANCE_SWAP', ICON.info.id, 'Icon', 'mainComponent');
   C.Banner = set;
   return set;
 }
@@ -992,8 +1004,8 @@ async function buildNavigation() {
     items.push(c);
   }
   const itemSet = combine(items, 'Nav Item');
-  wire(itemSet, 'Label', 'TEXT', 'Home', 'Label', 'characters');
-  wire(itemSet, 'Icon', 'INSTANCE_SWAP', ICON.home.id, 'Icon', 'mainComponent');
+  await wire(itemSet, 'Label', 'TEXT', 'Home', 'Label', 'characters');
+  await wire(itemSet, 'Icon', 'INSTANCE_SWAP', ICON.home.id, 'Icon', 'mainComponent');
   C['Nav Item'] = itemSet;
 
   const bars = [];
@@ -1026,7 +1038,7 @@ async function buildAppBar() {
     list.push(c);
   }
   const set = combine(list, 'App Bar', 1);
-  wire(set, 'Title', 'TEXT', 'Screen title', 'Title', 'characters');
+  await wire(set, 'Title', 'TEXT', 'Screen title', 'Title', 'characters');
   C['App Bar'] = set;
   return set;
 }
@@ -1048,9 +1060,9 @@ async function buildDialog() {
     list.push(c);
   }
   const set = combine(list, 'Dialog');
-  wire(set, 'Title', 'TEXT', 'Dialog title', 'Title', 'characters');
-  wire(set, 'Body', 'TEXT', 'Explain what will happen in plain language.', 'Body', 'characters');
-  wire(set, 'Icon', 'INSTANCE_SWAP', ICON.info.id, 'Icon', 'mainComponent');
+  await wire(set, 'Title', 'TEXT', 'Dialog title', 'Title', 'characters');
+  await wire(set, 'Body', 'TEXT', 'Explain what will happen in plain language.', 'Body', 'characters');
+  await wire(set, 'Icon', 'INSTANCE_SWAP', ICON.info.id, 'Icon', 'mainComponent');
   C.Dialog = set;
   return set;
 }
@@ -1086,7 +1098,7 @@ async function buildLoading() {
     list.push(c);
   }
   const set = combine(list, 'Loading');
-  wire(set, 'Message', 'TEXT', 'Loading…', 'Message', 'characters');
+  await wire(set, 'Message', 'TEXT', 'Loading…', 'Message', 'characters');
   C.Loading = set;
   return set;
 }
@@ -1114,10 +1126,10 @@ async function buildEmpty() {
     list.push(c);
   }
   const set = combine(list, 'Empty State');
-  wire(set, 'Title', 'TEXT', 'Nothing here yet', 'Title', 'characters');
-  wire(set, 'Message', 'TEXT', 'Explain why it is empty and what to do next.', 'Message', 'characters');
-  wire(set, 'Show action', 'BOOLEAN', true, 'Action', 'visible');
-  wire(set, 'Icon', 'INSTANCE_SWAP', ICON.inbox.id, 'Icon', 'mainComponent');
+  await wire(set, 'Title', 'TEXT', 'Nothing here yet', 'Title', 'characters');
+  await wire(set, 'Message', 'TEXT', 'Explain why it is empty and what to do next.', 'Message', 'characters');
+  await wire(set, 'Show action', 'BOOLEAN', true, 'Action', 'visible');
+  await wire(set, 'Icon', 'INSTANCE_SWAP', ICON.inbox.id, 'Icon', 'mainComponent');
   C['Empty State'] = set;
   return set;
 }
@@ -1145,8 +1157,8 @@ async function buildError() {
     list.push(c);
   }
   const set = combine(list, 'Error State');
-  wire(set, 'Title', 'TEXT', 'Something went wrong', 'Title', 'characters');
-  wire(set, 'Cause', 'TEXT', 'Say what failed and why, in plain language.', 'Cause', 'characters');
+  await wire(set, 'Title', 'TEXT', 'Something went wrong', 'Title', 'characters');
+  await wire(set, 'Cause', 'TEXT', 'Say what failed and why, in plain language.', 'Cause', 'characters');
   C['Error State'] = set;
   return set;
 }
@@ -1188,8 +1200,8 @@ async function buildSnackbar() {
     list.push(c);
   }
   const set = combine(list, 'Snackbar', 1);
-  wire(set, 'Message', 'TEXT', 'Invite declined', 'Message', 'characters');
-  wire(set, 'Action', 'TEXT', 'Undo', 'Action label', 'characters');
+  await wire(set, 'Message', 'TEXT', 'Invite declined', 'Message', 'characters');
+  await wire(set, 'Action', 'TEXT', 'Undo', 'Action label', 'characters');
   C.Snackbar = set;
   return set;
 }
@@ -1238,7 +1250,10 @@ async function buildComponentsPage() {
   async function section(docIndex, nodes) {
     const d = COMPONENT_DOCS[docIndex];
     const s = await docSection(d[0], d[1] + '\nFlutter: ' + d[2], 1100);
-    for (const n of [].concat(nodes)) put(s, n);
+    for (const n of [].concat(nodes)) {
+      if (n.type === 'COMPONENT_SET') gridLayout(n, GRID_COLS[n.id]);
+      put(s, n);
+    }
     put(root, s);
   }
 
