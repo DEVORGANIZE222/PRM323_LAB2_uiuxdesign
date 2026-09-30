@@ -5,7 +5,7 @@
  *      text styles and effect styles bound to those variables, plus a documentation board.
  *   2. "05 Components"    – the 9 required components (+ supporting ones), all Auto Layout,
  *      all variants, all fills/strokes/paddings/radii bound to the variables.
- *   3. "03 Final UI"      – SCR_06 → SCR_09 with every state variant next to its screen,
+ *   3. "03 Final UI"      – SCR_01 → SCR_09 with every state variant next to its screen,
  *      built only from instances of page 05, plus a 412 dp width check.
  * Each step can be run on its own from the plugin menu (so the file history shows the work
  * in stages). Re-running step 1 updates variable values in place; step 3 rebuilds its section.
@@ -91,6 +91,9 @@ const NUMBERS = [
   ['Size', 'size-icon-lg', 48, ['WIDTH_HEIGHT'], 'Icon in empty / error illustrations'],
   ['Size', 'size-avatar', 40, ['WIDTH_HEIGHT'], 'Avatar diameter · CircleAvatar(radius: 20)'],
   ['Size', 'size-illustration', 96, ['WIDTH_HEIGHT'], 'Empty / error illustration circle'],
+  ['Size', 'size-logo', 80, ['WIDTH_HEIGHT'], 'App logo on the sign-in screen'],
+  ['Size', 'size-chip', 32, ['WIDTH_HEIGHT'], 'Visible chip height (touch area stays 48)'],
+  ['Size', 'size-progress', 8, ['WIDTH_HEIGHT'], 'Team capacity progress bar height'],
   ['Size', 'size-status-bar', 24, ['WIDTH_HEIGHT'], 'System status bar (not built in Flutter)'],
   ['Size', 'size-app-bar', 64, ['WIDTH_HEIGHT'], 'AppBar toolbarHeight: 64'],
   ['Size', 'size-nav-bar', 80, ['WIDTH_HEIGHT'], 'NavigationBar height: 80'],
@@ -951,6 +954,26 @@ async function buildCard() {
     const action = put(col, use('Button', { Type: 'Secondary', State: 'Default' }, { Label: 'Invite from Waiting Pool' }, 'Action'), 'FILL'); action.isExposedInstance = true;
     list.push(c);
   }
+  // Group card for SCR_03 Browse: capacity badge + 5 visual slots (filled vs dashed) + tech tags.
+  for (const st of ['Default', 'Pressed']) {
+    const c = comp('Type=Group, State=' + st, { dir: 'v', gap: 'space-12', pad: 'space-16', radius: 'radius-md', fill: st === 'Pressed' ? 'surface-variant' : 'surface', stroke: 'outline-variant', w: 328 });
+    const head = frame('Head', { dir: 'h', gap: 'space-8', align: 'CENTER' });
+    put(c, head, 'FILL');
+    const title = put(head, await text('Team AI-04', 'subtitle', 'on-surface', { name: 'Title' }), 'FILL'); truncate(title);
+    const badge = put(head, use('Badge', { Tone: 'Success' }, { Label: '2 open slots' }, 'Badge')); badge.isExposedInstance = true;
+    put(c, await text('AI Healthcare Diagnostic Assistant', 'body', 'on-surface-variant', { name: 'Body' }), 'FILL');
+    const slots = frame('Slots', { dir: 'h', gap: 'space-8' });
+    put(c, slots, 'FILL');
+    ['TH', 'LB', 'PH', null, null].forEach((ini, k) => {
+      const a = use('Avatar', { Type: ini ? 'Initials' : 'Open slot' }, ini ? { Initials: ini } : null, 'Slot ' + (k + 1));
+      put(slots, a);
+    });
+    const tags = frame('Tags', { dir: 'h', gap: 'space-8' });
+    put(c, tags, 'FILL');
+    ['Python', 'FastAPI', 'Flutter'].forEach((t, k) => put(tags, use('Badge', { Tone: 'Neutral' }, { Label: t, 'Show icon': false }, 'Tag ' + (k + 1))));
+    const action = put(c, use('Button', { Type: 'Secondary', State: 'Default' }, { Label: 'View Details' }, 'Action'), 'FILL'); action.isExposedInstance = true;
+    list.push(c);
+  }
   const set = combine(list, 'Card', 3);
   await wire(set, 'Title', 'TEXT', 'Nguyen Van Minh', 'Title', 'characters');
   await wire(set, 'Subtitle', 'TEXT', 'Backend · Spring Boot', 'Subtitle', 'characters');
@@ -1212,6 +1235,38 @@ async function buildStatusBar() {
   return c;
 }
 
+async function buildChip() {
+  const list = [];
+  for (const st of ['Selected', 'Unselected']) {
+    const on = st === 'Selected';
+    // Outer frame keeps the 48 dp touch target; the visible pill is size-chip (32).
+    const c = comp('State=' + st, { dir: 'h', align: 'CENTER', h: 'size-touch' });
+    const pill = frame('Pill', { dir: 'h', gap: 'space-4', pad: [0, 'space-12'], align: 'CENTER', radius: 'radius-full', fill: on ? 'primary-container' : 'surface', stroke: on ? 'primary' : 'outline', h: 'size-chip' });
+    put(c, pill);
+    if (on) put(pill, icon('check', 'on-primary-container', 18));
+    put(pill, await text('Filter', 'label', on ? 'on-primary-container' : 'on-surface', { name: 'Label' }));
+    list.push(c);
+  }
+  const set = combine(list, 'Chip');
+  await wire(set, 'Label', 'TEXT', 'Filter', 'Label', 'characters');
+  C.Chip = set;
+  return set;
+}
+
+async function buildProgress() {
+  const list = [];
+  for (const tone of ['Warning', 'Success']) {
+    const c = comp('Tone=' + tone, { dir: 'h', radius: 'radius-full', fill: 'skeleton', clip: true, w: 328, h: 'size-progress' });
+    const bar = rect('Bar', 197, T['size-progress'], tone === 'Warning' ? 'warning' : 'success', 'radius-full');
+    put(c, bar);
+    bind(bar, 'height', 'size-progress');
+    list.push(c);
+  }
+  const set = combine(list, 'Progress');
+  C.Progress = set;
+  return set;
+}
+
 const COMPONENT_DOCS = [
   ['Icons', 'Material Symbols as components (Icon/…). Vectors are filled with Color variables; instances recolor per context. Used through Instance Swap properties.', 'Icon(Icons.…, size: 24)'],
   ['Icon Button', 'State: Default, Pressed. 48 × 48 dp touch target around a 24 dp glyph. Property: Icon (swap).', 'IconButton'],
@@ -1219,7 +1274,7 @@ const COMPONENT_DOCS = [
   ['Badge', 'Tone: Neutral, Primary, Success, Warning, Error, Info. Always icon + text, never color alone (WCAG 1.4.1). Properties: Label, Show icon. Icon follows Tone (swap the nested Icon layer to override).', 'Chip / custom StatusBadge'],
   ['Button', '① Type: Primary, Secondary (outlined), Destructive, Text × State: Default, Pressed, Disabled, Loading. Height = size-button (48). Properties: Label, Show icon, Icon.', 'FilledButton / OutlinedButton / FilledButton(error) / TextButton'],
   ['Text Field', '② State: Default, Focused, Filled, Error, Disabled. Error shows icon + message, not only a red border. Properties: Label, Show leading icon, Leading icon.', 'TextFormField + InputDecoration(OutlineInputBorder)'],
-  ['Card', '③ Type: Selectable (Default, Pressed, Selected), Member, Open slot, Notification (Default, Unread, Pressed), Info (Default, Pressed). Min height 72. Properties: Title, Subtitle, Body, Meta, Time, Show meta/badge/actions/action, Icon.', 'Card + InkWell / ListTile'],
+  ['Card', '③ Type: Selectable (Default, Pressed, Selected), Member, Open slot, Notification (Default, Unread, Pressed), Info (Default, Pressed), Group (Default, Pressed: capacity badge, 5 visual slots, tags). Min height 72. Properties: Title, Subtitle, Body, Meta, Time, Show meta/badge/actions/action, Icon.', 'Card + InkWell / ListTile'],
   ['Banner', 'Tone: Info, Success, Warning, Error. Inline status message above content. Properties: Title, Body, Show body. Icon follows Tone.', 'MaterialBanner-style Container'],
   ['Navigation', '④ Nav Item (State: Selected, Unselected) and Bottom Nav (Selected: Home, Browse, My Group, Alerts). Selected = indicator pill + dark label, not color only.', 'NavigationBar + NavigationDestination'],
   ['App Bar', '⑤ Type: Default, Back, Actions (two icon actions). Height 64. Property: Title.', 'AppBar(toolbarHeight: 64)'],
@@ -1230,6 +1285,8 @@ const COMPONENT_DOCS = [
   ['Segmented Tabs', 'Selected: All, Invites, System. Check icon marks the selected segment.', 'SegmentedButton<NotificationFilter>'],
   ['Snackbar', 'Type: Default, With action (Undo). Properties: Message, Action.', 'SnackBar(action: SnackBarAction)'],
   ['Status Bar', 'Device chrome for mock-ups only.', '— (system UI)'],
+  ['Chip', 'State: Selected, Unselected. Visible pill is size-chip (32) inside a 48 dp touch area; selected adds a check icon. Property: Label.', 'FilterChip'],
+  ['Progress', 'Tone: Warning (< 4 members), Success (4–5 members). Paired with an "N of 5 members" label, never color alone.', 'LinearProgressIndicator'],
 ];
 
 async function buildComponentsPage() {
@@ -1270,6 +1327,8 @@ async function buildComponentsPage() {
   await section(14, await buildTabs());
   await section(15, await buildSnackbar());
   await section(16, await buildStatusBar());
+  await section(17, await buildChip());
+  await section(18, await buildProgress());
 
   const ids = { icons: {}, components: {} };
   for (const k of Object.keys(ICON)) ids.icons[k] = ICON[k].id;
@@ -1308,7 +1367,7 @@ const MEMBERS = [
 async function screenFrame(title, state, o) {
   const f = frame(title + ' / ' + state, { dir: 'v', fill: 'background', clip: true, w: 360, h: 800 });
   put(f, use('Status Bar'), 'FILL');
-  const bar = put(f, use('App Bar', { Type: o.bar || 'Back' }, { Title: o.barTitle }, 'App Bar'), 'FILL');
+  const bar = o.bar === 'none' ? null : put(f, use('App Bar', { Type: o.bar || 'Back' }, { Title: o.barTitle }, 'App Bar'), 'FILL');
   const body = frame('Content', { dir: 'v', gap: 'space-16', pad: ['space-16', 'space-16', 'space-24', 'space-16'], clip: true });
   put(f, body, 'FILL', 'FILL');
   try { body.overflowDirection = 'VERTICAL'; } catch (e) { /* ignore */ }
@@ -1406,12 +1465,15 @@ function overlay(f, content) {
   return s;
 }
 
-function floatSnackbar(f, message, action, aboveNav) {
+function floatSnackbar(f, message, action) {
   const sb = use('Snackbar', { Type: action ? 'With action' : 'Default' }, action ? { Message: message, Action: action } : { Message: message }, 'Snackbar');
   f.appendChild(sb);
   sb.layoutPositioning = 'ABSOLUTE';
   sb.x = 16;
-  sb.y = f.height - (aboveNav ? T['size-nav-bar'] : 0) - sb.height - 16;
+  // Sit 16 dp above whatever is pinned at the bottom (action bar and/or bottom nav).
+  const pinned = f.children.filter((n) => n.name === 'Bottom Action Bar' || n.name === 'Bottom Nav');
+  const top = pinned.length ? Math.min.apply(null, pinned.map((n) => n.y)) : f.height;
+  sb.y = top - sb.height - 16;
   sb.constraints = { horizontal: 'STRETCH', vertical: 'MAX' };
   return sb;
 }
@@ -1424,6 +1486,219 @@ function dialog(type, title, body, confirm, cancel, iconName) {
   setNestedButton(d, 'Confirm', { Label: confirm });
   setNestedButton(d, 'Cancel', { Label: cancel });
   return d;
+}
+
+function setText(host, layer, chars) {
+  const t = host.findOne((n) => n.type === 'TEXT' && n.name === layer);
+  if (t) t.characters = chars; else warn('text layer ' + layer + ' not found in ' + host.name);
+}
+
+function chip(label, selected) {
+  return use('Chip', { State: selected ? 'Selected' : 'Unselected' }, { Label: label }, 'Chip · ' + label);
+}
+
+function progress(tone, fraction) {
+  const p = use('Progress', { Tone: tone }, null, 'Progress');
+  const bar = p.findOne((n) => n.name === 'Bar');
+  if (bar) bar.resize(Math.round(328 * fraction), bar.height);
+  return p;
+}
+
+const GROUPS = [
+  { code: 'AI-04', topic: 'AI Healthcare Diagnostic Assistant', slots: ['TH', 'LB', 'PH'], tags: ['Python', 'FastAPI', 'Flutter'], open: 2 },
+  { code: 'WEB-11', topic: 'Smart Campus Parking', slots: ['LT', 'NQ', 'VA'], tags: ['React', 'Spring Boot', 'MySQL'], open: 2 },
+  { code: 'MOB-07', topic: 'Canteen Pre-order App', slots: ['HD', 'TK', 'MP', 'QA', 'BN'], tags: ['Flutter', 'Firebase', 'Node.js'], open: 0 },
+];
+
+function groupCard(g) {
+  const full = g.open === 0;
+  const c = use('Card', { Type: 'Group', State: 'Default' }, { Title: 'Team ' + g.code, Body: g.topic }, 'Group · ' + g.code);
+  const b = nested(c, 'Badge');
+  if (b) {
+    setProps(b, full ? { Tone: 'Neutral', Label: 'Full · 5/5', Icon: 'lock' } : { Tone: 'Success', Label: g.open + ' open slots', Icon: 'check-circle' });
+    paintVectors(b, full ? 'on-tag' : 'success');
+  }
+  for (let k = 0; k < 5; k++) {
+    const slot = nested(c, 'Slot ' + (k + 1));
+    if (!slot) continue;
+    if (g.slots[k]) setProps(slot, { Type: 'Initials', Initials: g.slots[k] });
+    else setProps(slot, { Type: 'Open slot' });
+  }
+  g.tags.forEach((t, k) => { const tagNode = nested(c, 'Tag ' + (k + 1)); if (tagNode) setProps(tagNode, { Label: t }); });
+  const action = nested(c, 'Action');
+  if (action) setProps(action, full ? { State: 'Disabled', Label: 'Team is full' } : { Label: 'View Details' });
+  return c;
+}
+
+async function teamHeader(body, badgeTone, badgeLabel, badgeIcon, count, tone) {
+  const card = frame('Team header', { dir: 'v', gap: 'space-8', pad: 'space-16', fill: 'surface', radius: 'radius-md', stroke: 'outline-variant' });
+  put(body, card, 'FILL');
+  const head = frame('Head', { dir: 'h', gap: 'space-8', align: 'CENTER' });
+  put(card, head, 'FILL');
+  put(head, await text('Team AI-04', 'title', 'on-surface', { name: 'Team name' }), 'FILL');
+  const b = put(head, use('Badge', { Tone: badgeTone }, { Label: badgeLabel, Icon: badgeIcon }, 'Status badge'));
+  paintVectors(b, TONES[badgeTone][1]);
+  put(card, await text('AI Healthcare Diagnostic Assistant', 'body', 'on-surface-variant', { name: 'Topic' }), 'FILL');
+  put(card, progress(tone, count / 5), 'FILL');
+  put(card, await text(count + ' of 5 members · FPT rule: 4–5', 'body', 'on-surface', { name: 'Capacity' }), 'FILL');
+  return card;
+}
+
+/* ----- SCR_01 Sign In ----- */
+async function scr01(state) {
+  const s = await screenFrame('SCR_01 Sign In', state, { bar: 'none' });
+  const body = s.body;
+  body.primaryAxisAlignItems = 'CENTER';
+  body.counterAxisAlignItems = 'CENTER';
+  const logo = frame('Logo', { dir: 'h', justify: 'CENTER', align: 'CENTER', radius: 'radius-lg', fill: 'primary', w: 'size-logo', h: 'size-logo' });
+  put(body, logo);
+  put(logo, await text('CM', 'display', 'on-primary', { name: 'Logo mark' }));
+  put(body, await text('CapstoneMatch', 'display', 'on-surface', { name: 'App name', center: true }), 'FILL');
+  put(body, await text('Spring 2026 Capstone team registration. Find a 4–5 member team, elect a leader and lock your roster.', 'body', 'on-surface-variant', { name: 'Subtitle', center: true }), 'FILL');
+  if (state === 'Error · wrong domain') {
+    const e = put(body, use('Error State', { Layout: 'Inline' }, { Title: 'This is not an FPT account', Cause: 'You chose minh.nguyen@gmail.com. Sign in with your @fpt.edu.vn Google account.' }, 'Error State'), 'FILL');
+    setNestedButton(e, 'Retry', { Label: 'Retry' });
+  }
+  const bar = await actionBar(s.f);
+  if (state === 'Signing in') put(bar, button('Primary', 'Loading', 'Signing in…'), 'FILL');
+  else put(bar, button('Primary', 'Default', state === 'Error · wrong domain' ? 'Use Another Google Account' : 'Continue with Google', 'mail'), 'FILL');
+  put(bar, await text('Only @fpt.edu.vn accounts can sign in.', 'body', 'on-surface-variant', { name: 'Domain note', center: true }), 'FILL');
+  return s.f;
+}
+
+/* ----- SCR_02 Dashboard ----- */
+async function scr02(state) {
+  const s = await screenFrame('SCR_02 Dashboard', state, { bar: 'Actions', barTitle: 'Home' });
+  const body = s.body;
+  const actionsOnBar = [nested(s.bar, 'Action 1'), nested(s.bar, 'Action 2')];
+  if (actionsOnBar[0]) setProps(actionsOnBar[0], { Icon: 'notifications' });
+  if (actionsOnBar[1]) setProps(actionsOnBar[1], { Icon: 'person' });
+  if (state === 'Loading') {
+    put(body, use('Loading', { Type: 'Skeleton' }, null, 'Loading · Skeleton'), 'FILL');
+  } else if (state === 'Registration closed') {
+    put(body, banner('Error', 'Registration closed on 15 Oct', 'You were not in a team at the deadline, so the system placed you in the Random Pool.', 'error'), 'FILL');
+    put(body, infoCard('Automatic matching', 'The Academic Office matches Random Pool students by skills. Results arrive by 17 Oct, 17:00.', 'hourglass', null), 'FILL');
+    put(body, button('Primary', 'Default', 'View Matching Status', 'chevron-right'), 'FILL');
+  } else {
+    put(body, banner('Warning', '2 days 14 hours left', 'Team registration closes 15 Oct, 17:00.', 'schedule'), 'FILL');
+    await sectionTitle(body, 'My team', null);
+    if (state === 'Not in a team') {
+      const e = put(body, use('Empty State', { Layout: 'Compact' }, { Title: "You're not in a team yet", Message: 'Teams with open slots are waiting. Join one before the deadline.', Icon: 'group' }, 'Empty State'), 'FILL');
+      paintVectors(nested(e, 'Icon') || e, 'on-surface-variant');
+      setNestedButton(e, 'Action', { Label: 'Browse' });
+      put(body, button('Primary', 'Default', 'Browse Available Teams', 'search'), 'FILL');
+    } else {
+      await teamHeader(body, 'Warning', 'Leader not elected', 'schedule', 4, 'Success');
+      put(body, button('Primary', 'Default', 'Manage My Team', 'group'), 'FILL');
+    }
+    await sectionTitle(body, 'Checklist', null);
+    put(body, infoCard('Before 15 Oct, 17:00', '1. Join a team of 4–5 members\n2. Elect a leader\n3. Leader locks the roster', 'check-circle', null), 'FILL');
+  }
+  put(s.f, use('Bottom Nav', { Selected: 'Home' }, null, 'Bottom Nav'), 'FILL');
+  return s.f;
+}
+
+/* ----- SCR_03 Browse Groups ----- */
+async function scr03(state) {
+  const s = await screenFrame('SCR_03 Browse Groups', state, { bar: 'Default', barTitle: 'Browse Teams' });
+  const body = s.body;
+  const search = put(body, use('Text Field', { State: state === 'Empty' ? 'Filled' : 'Default' }, { Label: 'Search teams', 'Show leading icon': true }, 'Search'), 'FILL');
+  setText(search, 'Value', state === 'Empty' ? 'blockchain' : 'Name, topic or skill');
+  setText(search, 'Helper', state === 'Empty' ? '0 results' : '12 teams have open slots');
+  const chips = frame('Filter chips', { dir: 'h', gap: 'space-8', clip: true });
+  put(body, chips, 'FILL');
+  put(chips, chip('Open slots', true));
+  put(chips, chip('AI / ML', false));
+  put(chips, chip('Mobile', false));
+  put(chips, chip('Web', false));
+  if (state === 'Loading') {
+    put(body, use('Loading', { Type: 'Skeleton' }, null, 'Loading · Skeleton'), 'FILL');
+  } else if (state === 'Empty') {
+    const e = put(body, use('Empty State', { Layout: 'Screen' }, { Title: 'No teams match "blockchain"', Message: 'Try another keyword, or turn off a filter to see more teams.', Icon: 'search' }, 'Empty State'), 'FILL');
+    paintVectors(nested(e, 'Icon') || e, 'primary');
+    setNestedButton(e, 'Action', { Label: 'Reset Filters' });
+  } else {
+    for (const g of GROUPS) put(body, groupCard(g), 'FILL');
+  }
+  put(s.f, use('Bottom Nav', { Selected: 'Browse' }, null, 'Bottom Nav'), 'FILL');
+  if (state === 'Team just filled') floatSnackbar(s.f, 'Team WEB-11 just filled up (5/5). List refreshed.', null);
+  return s.f;
+}
+
+/* ----- SCR_04 Group Detail ----- */
+async function scr04(state) {
+  const s = await screenFrame('SCR_04 Group Detail', state, { barTitle: 'Team AI-04' });
+  const body = s.body;
+  const full = state === 'Team full';
+  if (full) put(body, banner('Error', 'This team is full (5/5)', 'Someone took the last slot a moment ago. Browse teams that still have open slots.', 'lock'), 'FILL');
+  const topic = frame('Topic', { dir: 'v', gap: 'space-8', pad: 'space-16', fill: 'surface', radius: 'radius-md', stroke: 'outline-variant' });
+  put(body, topic, 'FILL');
+  put(topic, await text('AI Healthcare Diagnostic Assistant', 'title', 'on-surface', { name: 'Topic title' }), 'FILL');
+  put(topic, await text('A mobile app that helps clinics triage patients with an image-based AI model.', 'body', 'on-surface-variant', { name: 'Topic description' }), 'FILL');
+  const tags = frame('Tags', { dir: 'h', gap: 'space-8' });
+  put(topic, tags, 'FILL');
+  for (const t of ['Python', 'FastAPI', 'Flutter']) put(tags, use('Badge', { Tone: 'Neutral' }, { Label: t, 'Show icon': false }, 'Tag'));
+  await sectionTitle(body, 'Roster', full ? '5/5' : '3/5');
+  const list = frame('Roster', { dir: 'v', gap: 'space-12' });
+  put(body, list, 'FILL');
+  for (const m of MEMBERS.slice(1)) put(list, member(m, 'Success', 'Confirmed', 'check-circle'), 'FILL');
+  if (full) {
+    put(list, member({ i: 'KD', name: 'Khuat Duy', id: 'SE182990', role: 'Backend · Node.js' }, 'Success', 'Confirmed', 'check-circle'), 'FILL');
+  } else {
+    put(list, openSlot('Looking for: Backend · Spring Boot'), 'FILL');
+    put(list, openSlot('Optional 5th member'), 'FILL');
+  }
+  const bar = await actionBar(s.f);
+  if (full) {
+    put(bar, button('Primary', 'Disabled', 'Team is full', 'lock'), 'FILL');
+    put(bar, button('Text', 'Default', 'Back to Browse'), 'FILL');
+  } else {
+    put(bar, button('Primary', 'Default', 'Request to Join Team', 'person-add'), 'FILL');
+  }
+  if (state === 'Join dialog') {
+    overlay(s.f, dialog('Confirmation', 'Join Team AI-04?', "You'll become the 4th member. Joining withdraws you from other teams you applied to.", 'Confirm Join', 'Cancel', 'person-add'));
+  }
+  if (state === 'Joining') overlay(s.f, use('Loading', { Type: 'Overlay' }, { Message: 'Joining Team AI-04…' }, 'Loading · Overlay'));
+  return s.f;
+}
+
+/* ----- SCR_05 My Group Hub ----- */
+async function scr05(state) {
+  const s = await screenFrame('SCR_05 My Group Hub', state, { bar: 'Default', barTitle: 'My Group' });
+  const body = s.body;
+  if (state === 'Loading') {
+    put(body, use('Loading', { Type: 'Skeleton' }, null, 'Loading · Skeleton'), 'FILL');
+    put(s.f, use('Bottom Nav', { Selected: 'My Group' }, null, 'Bottom Nav'), 'FILL');
+    return s.f;
+  }
+  const elected = state === 'Leader elected (leader view)';
+  const locked = state === 'Locked';
+  if (locked) await teamHeader(body, 'Success', 'Locked', 'lock', 4, 'Success');
+  else if (elected) await teamHeader(body, 'Success', 'Ready to lock', 'check-circle', 4, 'Success');
+  else await teamHeader(body, 'Warning', 'Leader not elected', 'schedule', 4, 'Success');
+
+  if (locked) put(body, banner('Success', 'Roster locked', 'Confirmation code CM-AI04-7F3K. Nothing else to do until the semester starts.', 'lock'), 'FILL');
+  else if (elected) put(body, banner('Success', 'You are the team leader', '3 of 4 members voted for you. Review the roster and lock it before 15 Oct, 17:00.', 'star'), 'FILL');
+  else put(body, banner('Warning', 'No leader yet', 'Only the elected leader can lock the roster. Vote now: 1 of 4 members has voted.', 'warning'), 'FILL');
+
+  await sectionTitle(body, 'Members', '4');
+  const list = frame('Members', { dir: 'v', gap: 'space-12' });
+  put(body, list, 'FILL');
+  const order = [MEMBERS[1], MEMBERS[0], MEMBERS[2], MEMBERS[3]];
+  for (const m of order) {
+    if (m.i === 'TH' && (elected || locked)) put(list, member(m, 'Primary', 'Leader', 'star'), 'FILL');
+    else if (m.i === 'NM') put(list, member(m, 'Info', 'You', 'person'), 'FILL');
+    else put(list, member(m, 'Success', locked ? 'Locked' : 'Confirmed', locked ? 'lock' : 'check-circle'), 'FILL');
+  }
+  if (!locked) {
+    const bar = await actionBar(s.f);
+    if (elected) put(bar, button('Primary', 'Default', 'Proceed to Lock Team', 'lock'), 'FILL');
+    else put(bar, button('Primary', 'Default', 'Vote for Leader', 'star'), 'FILL');
+    put(bar, button('Text', 'Default', 'Leave Group'), 'FILL');
+  }
+  put(s.f, use('Bottom Nav', { Selected: 'My Group' }, null, 'Bottom Nav'), 'FILL');
+  if (state === 'Joined · no leader yet') floatSnackbar(s.f, 'You joined Team AI-04.', null);
+  return s.f;
 }
 
 /* ----- SCR_06 Leader Voting ----- */
@@ -1502,7 +1777,8 @@ async function scr07(state) {
   const count = underfilled ? 3 : 4;
   for (let i = 0; i < count; i++) {
     const m = MEMBERS[i];
-    if (i === 0) put(list, member(m, 'Primary', 'Leader', 'star'), 'FILL');
+    // Tran Thu Ha won the SCR_06 election, so she is the leader everywhere after it.
+    if (m.i === 'TH') put(list, member(m, 'Primary', 'Leader', 'star'), 'FILL');
     else put(list, member(m, 'Success', locked ? 'Locked' : 'Confirmed', locked ? 'lock' : 'check-circle'), 'FILL');
   }
   if (underfilled) {
@@ -1606,7 +1882,7 @@ async function scr09(state) {
 
   put(s.f, use('Bottom Nav', { Selected: 'Alerts' }, null, 'Bottom Nav'), 'FILL');
 
-  if (state === 'Declined · undo') floatSnackbar(s.f, 'Invite from Team WEB-11 declined', 'Undo', true);
+  if (state === 'Declined · undo') floatSnackbar(s.f, 'Invite from Team WEB-11 declined', 'Undo');
   if (state === 'Accept dialog') {
     overlay(s.f, dialog('Confirmation', 'Join Team WEB-11?', "You'll join as Backend developer (4/5 members). Your other pending invites will be declined automatically.", 'Join Team', 'Cancel', 'person-add'));
   }
@@ -1614,6 +1890,16 @@ async function scr09(state) {
 }
 
 const SCREENS = [
+  ['SCR_01 Sign In', 'Entry point for every flow. FPT Google SSO only; wrong-domain error is recoverable.', scr01,
+    ['Default', 'Signing in', 'Error · wrong domain']],
+  ['SCR_02 Dashboard', 'Top-level tab (Home). Start of Flow 1; deadline countdown; route to SCR_08 after the deadline.', scr02,
+    ['Not in a team', 'In a team', 'Registration closed', 'Loading']],
+  ['SCR_03 Browse Groups', 'Top-level tab (Browse). Flow 1 · search, filter and pick a team with open slots.', scr03,
+    ['Populated', 'Loading', 'Empty', 'Team just filled']],
+  ['SCR_04 Group Detail', 'Flow 1 · inspect the roster and join. Back returns to SCR_03.', scr04,
+    ['Default', 'Join dialog', 'Joining', 'Team full']],
+  ['SCR_05 My Group Hub', 'Top-level tab (My Group). End of Flow 1, start/end of Flows 2 and 3.', scr05,
+    ['Joined · no leader yet', 'Leader elected (leader view)', 'Locked', 'Loading']],
   ['SCR_06 Leader Voting', 'Flow 2 · Vote for a leader. Nested under My Group; Back returns to SCR_05.', scr06,
     ['Default', 'Selected', 'Submitting', 'Submitted', 'Change vote dialog', 'Loading', 'Error']],
   ['SCR_07 Lock Team Roster', 'Flow 3 · Lock the roster, with the < 4 members error and its recovery path.', scr07,
@@ -1632,12 +1918,13 @@ async function buildScreens() {
   const x0 = rightEdge(page, 'screens');
 
   const section = tag(figma.createSection(), 'screens');
-  section.name = 'SCR_06 – SCR_09 · Final UI';
+  section.name = 'Final UI · SCR_01 – SCR_09';
   section.x = x0; section.y = 0;
 
   const GAP = 64, W = 360, H = 800;
   let y = 80, maxX = 0;
   const defaults = [];
+  const screenIds = {};
   for (const sc of SCREENS) {
     const h = await text(sc[0], 'display', 'on-surface');
     section.appendChild(h); h.x = 80; h.y = y;
@@ -1650,7 +1937,7 @@ async function buildScreens() {
       section.appendChild(cap); cap.x = x; cap.y = y;
       const f = await sc[2](st);
       section.appendChild(f); f.x = x; f.y = y + 32;
-      if (st === sc[3][0]) defaults.push(f);
+      if (st === sc[3][0]) { defaults.push(f); screenIds[sc[0].slice(0, 6)] = f.id; }
       x += W + GAP;
     }
     maxX = Math.max(maxX, x);
@@ -1676,6 +1963,286 @@ async function buildScreens() {
   }
   y += 32 + 915 + 80;
   section.resizeWithoutConstraints(Math.max(maxX, x) + 16, y);
+  figma.root.setSharedPluginData(NS, 'screens', JSON.stringify(screenIds));
+  figma.viewport.scrollAndZoomIntoView([section]);
+}
+
+async function loadScreenIds() {
+  const raw = figma.root.getSharedPluginData(NS, 'screens');
+  if (!raw) throw new Error('No final screens yet – run "3 · Final UI" first.');
+  return JSON.parse(raw);
+}
+
+/* ------------------------------------------------------------------------------------------
+ * STEP 4: page 01 – user flows, every screen step hyperlinked to its frame on page 03
+ * ---------------------------------------------------------------------------------------- */
+const FLOWS = [
+  {
+    name: 'Flow 1 · Discover and join a team',
+    meta: 'Start: SCR_02 Dashboard (not in a team) · Goal: join a compatible team with an open slot · End: SCR_05 My Group Hub',
+    rows: [
+      ['Happy path', [['SCR_01', 'Sign in with FPT Google'], ['SCR_02', 'Tap "Browse Available Teams"'], ['SCR_03', 'Filter "Open slots", tap Team AI-04'], ['SCR_04', 'Request to Join → Confirm'], ['SCR_05', 'Joined (snackbar)']]],
+      ['Alternative', [['SCR_03', 'Search finds nothing'], ['SCR_03', 'Reset Filters'], ['SCR_04', 'Pick another team']]],
+      ['Error / recovery', [['SCR_04', 'Team filled meanwhile: "Team is full"'], ['SCR_03', 'Back to Browse, list refreshed'], ['SCR_04', 'Join a team with a slot']]],
+      ['Alternative entry', [['SCR_09', 'Accept an invite'], ['SCR_05', 'Joined']]],
+    ],
+  },
+  {
+    name: 'Flow 2 · Vote for a team leader',
+    meta: 'Start: SCR_05 (no leader yet) · Goal: elect the member who may lock the roster · End: SCR_05 with a Leader badge',
+    rows: [
+      ['Happy path', [['SCR_05', 'Tap "Vote for Leader"'], ['SCR_06', 'Select a candidate'], ['SCR_06', 'Submit My Vote → loading'], ['SCR_06', 'Vote recorded'], ['SCR_05', 'Leader elected at 3 votes']]],
+      ['Alternative', [['SCR_06', 'Tap "Change Vote"'], ['SCR_06', 'Dialog: change your vote?'], ['SCR_06', 'Vote moved']]],
+      ['Error / recovery', [['SCR_06', 'No internet: "Couldn\'t load candidates"'], ['SCR_06', 'Try Again'], ['SCR_06', 'Candidates load']]],
+    ],
+  },
+  {
+    name: 'Flow 3 · Lock the team roster',
+    meta: 'Start: SCR_05 (leader view) · Goal: submit a valid 4–5 member roster · End: SCR_05 Locked',
+    rows: [
+      ['Happy path', [['SCR_05', 'Tap "Proceed to Lock Team"'], ['SCR_07', 'Review: 4 of 5 members'], ['SCR_07', 'Destructive dialog → Yes'], ['SCR_07', 'Locking → Locked + code'], ['SCR_05', 'Team shows Locked']]],
+      ['Error / recovery', [['SCR_07', 'Only 3 of 5: lock disabled'], ['SCR_07', 'Invite from Waiting Pool'], ['SCR_09', 'A student accepts'], ['SCR_07', '4 of 5: lock enabled']]],
+      ['After deadline', [['SCR_02', 'Registration closed'], ['SCR_08', 'Matching status, refresh'], ['SCR_08', 'Placed in a team']]],
+    ],
+  },
+];
+
+async function buildFlowsPage() {
+  await loadComponents();
+  const ids = await loadScreenIds();
+  const page = await gotoPage('01 User Flow');
+  await page.loadAsync();
+  clearGenerated(page, 'flows');
+  const root = tag(frame('User Flows · CapstoneMatch', { dir: 'v', gap: 'space-32' }), 'flows');
+  put(root, await docSection('01 User Flow', 'Three flows with a start, a goal and an end. Every step names the screen it uses; click the underlined screen code to jump to that screen on page 03 (Final UI). Flow 3 includes the error and recovery path (fewer than 4 members).'));
+
+  for (const fl of FLOWS) {
+    const sec = await docSection(fl.name, fl.meta);
+    for (const row of fl.rows) {
+      const line = frame(row[0], { dir: 'h', gap: 'space-8', align: 'CENTER' });
+      put(sec, line);
+      const lab = put(line, await text(row[0], 'label', row[0].indexOf('Error') === 0 ? 'error' : 'on-surface-variant', { name: 'Path' }));
+      lab.textAutoResize = 'HEIGHT'; lab.resize(140, lab.height);
+      for (let i = 0; i < row[1].length; i++) {
+        const step = row[1][i];
+        if (i > 0) put(line, icon('chevron-right', 'on-surface-variant'));
+        const box = frame(step[0], { dir: 'v', gap: 'space-4', pad: 'space-12', radius: 'radius-sm', fill: row[0] === 'Happy path' ? 'primary-container' : 'surface', stroke: row[0].indexOf('Error') === 0 ? 'error' : 'outline-variant', w: 176 });
+        put(line, box);
+        const code = put(box, await text(step[0], 'label', 'primary', { name: 'Screen link' }), 'FILL');
+        if (ids[step[0]]) {
+          try {
+            code.setRangeHyperlink(0, step[0].length, { type: 'NODE', value: ids[step[0]] });
+            code.setRangeTextDecoration(0, step[0].length, 'UNDERLINE');
+          } catch (e) { warn('hyperlink ' + step[0] + ': ' + e.message); }
+        }
+        put(box, await text(step[1], 'body', 'on-surface', { name: 'Step' }), 'FILL');
+      }
+    }
+    put(root, sec);
+  }
+
+  const map = await docSection('Flow → screen map', null);
+  const rows = [
+    ['Flow', 'Start', 'Screens used', 'End', 'Alternative / error path'],
+    ['1 · Join a team', 'SCR_02', 'SCR_01, 02, 03, 04, 05, 09', 'SCR_05', 'Empty search → reset; team filled → back to SCR_03; join from an invite in SCR_09'],
+    ['2 · Vote leader', 'SCR_05', 'SCR_05, 06', 'SCR_05', 'Change vote dialog; load error → Try Again'],
+    ['3 · Lock roster', 'SCR_05', 'SCR_05, 07, 09, 02, 08', 'SCR_05', 'Fewer than 4 members → invite from Waiting Pool; after the deadline → SCR_08'],
+  ];
+  const widths = [150, 90, 250, 90, 520];
+  for (let r = 0; r < rows.length; r++) {
+    const line = frame('Row ' + r, { dir: 'h', gap: 'space-16', pad: ['space-8', 'space-12'], fill: r === 0 ? 'surface-variant' : null, radius: 'radius-sm' });
+    put(map, line);
+    for (let c = 0; c < rows[r].length; c++) {
+      const t = put(line, await text(rows[r][c], r === 0 ? 'label' : 'body', 'on-surface'));
+      t.textAutoResize = 'HEIGHT'; t.resize(widths[c], t.height);
+    }
+  }
+  put(root, map);
+  root.x = 0; root.y = 0;
+  figma.viewport.scrollAndZoomIntoView([root]);
+}
+
+/* ------------------------------------------------------------------------------------------
+ * STEP 5: page 02 – low-fidelity wireframes (greyscale copies of each screen's default state)
+ * ---------------------------------------------------------------------------------------- */
+function wireGrey(p, isText, isStroke) {
+  if (!p || p.type !== 'SOLID') return p;
+  const L = lum(p.color);
+  let hex;
+  if (isStroke) hex = '#BDBDBD';
+  else if (isText) hex = L > 0.8 ? '#FFFFFF' : '#4A4A4A';
+  else hex = L > 0.95 ? '#FFFFFF' : L > 0.85 ? '#F0F0F0' : L > 0.5 ? '#D6D6D6' : '#9E9E9E';
+  return { type: 'SOLID', color: hexToRgb(hex), opacity: p.opacity === undefined ? 1 : p.opacity };
+}
+
+async function wireframize(root) {
+  let inst;
+  while ((inst = root.findOne((n) => n.type === 'INSTANCE'))) inst.detachInstance();
+  for (const n of [root].concat(root.findAll())) {
+    if ('effectStyleId' in n && n.effectStyleId) { try { await n.setEffectStyleIdAsync(''); } catch (e) { /* ignore */ } }
+    if ('effects' in n && n.effects.length) n.effects = [];
+    if ('fills' in n && Array.isArray(n.fills)) n.fills = n.fills.map((p) => wireGrey(p, n.type === 'TEXT', false));
+    if ('strokes' in n && Array.isArray(n.strokes)) n.strokes = n.strokes.map((p) => wireGrey(p, false, true));
+  }
+}
+
+async function buildWireframesPage() {
+  const ids = await loadScreenIds();
+  const page = await gotoPage('02 Wireframe');
+  await page.loadAsync();
+  clearGenerated(page, 'wireframes');
+  const section = tag(figma.createSection(), 'wireframes');
+  section.name = 'Wireframes · SCR_01 – SCR_09';
+  const h = await text('02 Wireframe', 'display', 'on-surface');
+  section.appendChild(h); h.x = 80; h.y = 80;
+  const d = await text('Low-fidelity layout of all nine screens: greyscale, no brand color, no imagery. Same structure and spacing as the final UI so the handoff stays consistent.', 'body', 'on-surface-variant');
+  section.appendChild(d); d.x = 80; d.y = 124;
+  const codes = Object.keys(ids).sort();
+  let x = 80, y = 200, col = 0;
+  for (const code of codes) {
+    const src = await figma.getNodeByIdAsync(ids[code]);
+    if (!src) { warn('wireframe source missing ' + code); continue; }
+    const wf = src.clone();
+    section.appendChild(wf);
+    wf.name = 'WF · ' + src.name.replace(/ \/ .*/, '');
+    await wireframize(wf);
+    const cap = await text(wf.name, 'label', 'on-surface-variant');
+    section.appendChild(cap); cap.x = x; cap.y = y;
+    wf.x = x; wf.y = y + 32;
+    col++;
+    if (col === 5) { col = 0; x = 80; y += 32 + 800 + 80; } else x += 360 + 64;
+  }
+  if (col !== 0) y += 32 + 800 + 80;
+  section.resizeWithoutConstraints(80 + 5 * 424 + 16, y);
+  section.x = 0; section.y = 0;
+  figma.viewport.scrollAndZoomIntoView([section]);
+}
+
+/* ------------------------------------------------------------------------------------------
+ * STEP 6: page 06 – clickable prototype for the three flows (+ the error/recovery path)
+ * ---------------------------------------------------------------------------------------- */
+const TAP = { type: 'ON_CLICK' };
+function goTo(dest) { return { type: 'NODE', destinationId: dest.id, navigation: 'NAVIGATE', transition: { type: 'SMART_ANIMATE', easing: { type: 'EASE_OUT' }, duration: 0.3 }, preserveScrollPosition: false }; }
+function openOverlay(dest) { return { type: 'NODE', destinationId: dest.id, navigation: 'OVERLAY', transition: { type: 'DISSOLVE', easing: { type: 'EASE_OUT' }, duration: 0.2 }, preserveScrollPosition: false }; }
+const BACK = { type: 'BACK' };
+const CLOSE = { type: 'CLOSE' };
+function after(ms) { return { type: 'AFTER_TIMEOUT', timeout: ms / 1000 }; }
+
+async function react(node, trigger, action, what) {
+  if (!node) { warn('prototype: missing ' + what); return; }
+  try { await node.setReactionsAsync([{ trigger: trigger, actions: [action] }]); } catch (e) { warn('reaction ' + what + ': ' + e.message); }
+}
+function btnIn(f, label) { return f.findOne((n) => n.type === 'INSTANCE' && n.name === 'Button · ' + label); }
+function backIn(f) { const ab = f.findOne((n) => n.name === 'App Bar'); return ab ? ab.findOne((n) => n.name === 'Back') : null; }
+function navIn(f, dest) { const bn = f.findOne((n) => n.name === 'Bottom Nav'); return bn ? bn.findOne((n) => n.name === dest) : null; }
+function named(f, name) { return f.findOne((n) => n.name === name); }
+
+function overlayFrame(name, content) {
+  const f = frame('Overlay / ' + name, { dir: 'v' });
+  put(f, content);
+  try {
+    f.overlayPositionType = 'CENTER';
+    f.overlayBackground = { type: 'SOLID_COLOR', color: Object.assign({}, CR.scrim) };
+    f.overlayBackgroundInteraction = 'CLOSE_ON_CLICK_OUTSIDE';
+  } catch (e) { /* overlay settings are read-only in some API versions; Figma then uses its defaults */ }
+  return f;
+}
+
+async function buildPrototypePage() {
+  await loadComponents();
+  const page = await gotoPage('06 Prototype');
+  await page.loadAsync();
+  clearGenerated(page, 'prototype');
+  const section = tag(figma.createSection(), 'prototype');
+  section.name = 'Prototype · 3 flows';
+
+  let y = 80;
+  async function row(title, desc, frames) {
+    const h = await text(title, 'display', 'on-surface');
+    section.appendChild(h); h.x = 80; h.y = y;
+    const d = await text(desc, 'body', 'on-surface-variant');
+    section.appendChild(d); d.x = 80; d.y = y + 44;
+    let x = 80;
+    for (const f of frames) {
+      section.appendChild(f);
+      f.x = x; f.y = y + 110;
+      x += (f.name.indexOf('Overlay') === 0 ? 312 : 360) + 64;
+    }
+    y += 110 + 800 + 120;
+    return x;
+  }
+
+  // Flow 1
+  const a1 = await scr02('Not in a team'), a2 = await scr03('Populated'), a3 = await scr04('Default');
+  const o1 = overlayFrame('Join team', dialog('Confirmation', 'Join Team AI-04?', "You'll become the 4th member. Joining withdraws you from other teams you applied to.", 'Confirm Join', 'Cancel', 'person-add'));
+  const a4 = await scr04('Joining'), a5 = await scr05('Joined · no leader yet');
+  // Flow 2
+  const b1 = await scr05('Joined · no leader yet'), b2 = await scr06('Default'), b3 = await scr06('Selected'), b4 = await scr06('Submitting'), b5 = await scr06('Submitted');
+  const o2 = overlayFrame('Change vote', dialog('Confirmation', 'Change your vote?', 'Your vote moves from Tran Thu Ha to Le Quoc Bao. You can change it until all 4 members have voted.', 'Change Vote', 'Keep Current Vote', 'star'));
+  const b6 = await scr05('Leader elected (leader view)');
+  // Flow 3 (+ error and recovery)
+  const c1 = await scr05('Leader elected (leader view)'), c2 = await scr07('Ready (4 of 5)');
+  const o3 = overlayFrame('Lock roster', dialog('Destructive', 'Lock roster permanently?', 'Team AI-04 will be submitted with 4 members. After locking, no one can join, leave or be removed. This cannot be undone.', 'Yes, Lock Permanently', 'Cancel', 'warning'));
+  const c3 = await scr07('Locking'), c4 = await scr07('Locked'), c5 = await scr05('Locked');
+  const e1 = await scr07('Error · 3 of 5'), e2 = await scr07('Recovery · invites sent');
+
+  let maxX = 0;
+  maxX = Math.max(maxX, await row('Flow 1 · Discover and join a team', 'Start: Dashboard → Browse → Team AI-04 → Join dialog (overlay) → Joining (auto-advances after 1.5 s) → My Group. Back arrows return to the previous screen.', [a1, a2, a3, o1, a4, a5]));
+  maxX = Math.max(maxX, await row('Flow 2 · Vote for a team leader', 'Start: My Group → Vote → select Tran Thu Ha → Submit → Submitting (1.5 s) → Vote recorded → Back → My Group with a leader. "Change Vote" opens an overlay dialog.', [b1, b2, b3, b4, b5, o2, b6]));
+  maxX = Math.max(maxX, await row('Flow 3 · Lock the roster', 'Start: My Group (leader) → Review → destructive dialog (overlay) → Locking (1.5 s) → Locked → My Group (Locked).', [c1, c2, o3, c3, c4, c5]));
+  maxX = Math.max(maxX, await row('Flow 3b · Error and recovery (fewer than 4 members)', 'Start: Lock review with 3 of 5 → Invite from Waiting Pool → invites sent → a student accepts (auto-advances after 2.5 s) → Lock review with 4 of 5.', [e1, e2]));
+
+  // Flow 1
+  await react(btnIn(a1, 'Browse Available Teams'), TAP, goTo(a2), 'a1 browse');
+  await react(navIn(a1, 'Browse'), TAP, goTo(a2), 'a1 nav browse');
+  await react(named(a2, 'Group · AI-04'), TAP, goTo(a3), 'a2 group card');
+  await react(navIn(a2, 'Home'), TAP, goTo(a1), 'a2 nav home');
+  await react(backIn(a3), TAP, BACK, 'a3 back');
+  await react(btnIn(a3, 'Request to Join Team'), TAP, openOverlay(o1), 'a3 join');
+  await react(named(o1, 'Confirm'), TAP, goTo(a4), 'o1 confirm');
+  await react(named(o1, 'Cancel'), TAP, CLOSE, 'o1 cancel');
+  await react(a4, after(1500), goTo(a5), 'a4 timeout');
+  await react(navIn(a5, 'Home'), TAP, goTo(a1), 'a5 nav home');
+  // Flow 2
+  await react(btnIn(b1, 'Vote for Leader'), TAP, goTo(b2), 'b1 vote');
+  await react(named(b2, 'Candidate · Tran Thu Ha'), TAP, goTo(b3), 'b2 candidate');
+  await react(backIn(b2), TAP, BACK, 'b2 back');
+  await react(btnIn(b3, 'Submit My Vote'), TAP, goTo(b4), 'b3 submit');
+  await react(backIn(b3), TAP, BACK, 'b3 back');
+  await react(b4, after(1500), goTo(b5), 'b4 timeout');
+  await react(btnIn(b5, 'Change Vote'), TAP, openOverlay(o2), 'b5 change');
+  await react(backIn(b5), TAP, goTo(b6), 'b5 back');
+  await react(named(o2, 'Confirm'), TAP, goTo(b4), 'o2 confirm');
+  await react(named(o2, 'Cancel'), TAP, CLOSE, 'o2 cancel');
+  await react(btnIn(b6, 'Proceed to Lock Team'), TAP, goTo(c2), 'b6 proceed');
+  // Flow 3
+  await react(btnIn(c1, 'Proceed to Lock Team'), TAP, goTo(c2), 'c1 proceed');
+  await react(backIn(c2), TAP, BACK, 'c2 back');
+  await react(btnIn(c2, 'Lock Team Roster'), TAP, openOverlay(o3), 'c2 lock');
+  await react(named(o3, 'Confirm'), TAP, goTo(c3), 'o3 confirm');
+  await react(named(o3, 'Cancel'), TAP, CLOSE, 'o3 cancel');
+  await react(c3, after(1500), goTo(c4), 'c3 timeout');
+  await react(btnIn(c4, 'Back to My Group'), TAP, goTo(c5), 'c4 back to group');
+  await react(backIn(c4), TAP, goTo(c5), 'c4 back');
+  await react(navIn(c5, 'Home'), TAP, goTo(a1), 'c5 nav home');
+  // Flow 3b
+  const infoAction = named(e1, 'Info · Need 1 more member?');
+  await react(infoAction ? named(infoAction, 'Action') : null, TAP, goTo(e2), 'e1 invite');
+  await react(backIn(e1), TAP, BACK, 'e1 back');
+  await react(e2, after(2500), goTo(c2), 'e2 timeout');
+  await react(backIn(e2), TAP, BACK, 'e2 back');
+
+  try {
+    page.flowStartingPoints = [
+      { nodeId: a1.id, name: 'Flow 1 · Discover and join a team' },
+      { nodeId: b1.id, name: 'Flow 2 · Vote for a team leader' },
+      { nodeId: c1.id, name: 'Flow 3 · Lock the roster' },
+      { nodeId: e1.id, name: 'Flow 3b · Error and recovery' },
+    ];
+  } catch (e) { warn('flow starting points: ' + e.message); }
+
+  section.resizeWithoutConstraints(maxX + 16, y);
+  section.x = 0; section.y = 0;
   figma.viewport.scrollAndZoomIntoView([section]);
 }
 
@@ -1690,10 +2257,10 @@ async function run() {
   const done = [];
   if (cmd === 'tokens' || cmd === 'all') { await buildDesignSystemPage(); done.push('04 Design System'); }
   if (cmd === 'components' || cmd === 'all') { const built = await buildComponentsPage(); done.push(built ? '05 Components' : '05 (kept)'); }
-  if (cmd === 'screens' || cmd === 'all') { await buildScreens(); done.push('03 Final UI SCR_06–09'); }
-  if (cmd === 'tokens') {
-    // variables only: nothing else to do
-  }
+  if (cmd === 'screens' || cmd === 'all') { await buildScreens(); done.push('03 Final UI'); }
+  if (cmd === 'flows' || cmd === 'all') { await buildFlowsPage(); done.push('01 User Flow'); }
+  if (cmd === 'wireframes' || cmd === 'all') { await buildWireframesPage(); done.push('02 Wireframe'); }
+  if (cmd === 'prototype' || cmd === 'all') { await buildPrototypePage(); done.push('06 Prototype'); }
   const tail = warnings.length ? ' · ' + warnings.length + ' warnings (see console)' : '';
   figma.closePlugin('✅ ' + done.join(', ') + tail);
 }
