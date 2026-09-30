@@ -1571,11 +1571,9 @@ async function scr01(state) {
 
 /* ----- SCR_02 Dashboard ----- */
 async function scr02(state) {
-  const s = await screenFrame('SCR_02 Dashboard', state, { bar: 'Actions', barTitle: 'Home' });
+  // Critique C-03 (accepted): no bell/profile on Home; the Alerts tab is the single entry point.
+  const s = await screenFrame('SCR_02 Dashboard', state, { bar: 'Default', barTitle: 'Home' });
   const body = s.body;
-  const actionsOnBar = [nested(s.bar, 'Action 1'), nested(s.bar, 'Action 2')];
-  if (actionsOnBar[0]) setProps(actionsOnBar[0], { Icon: 'notifications' });
-  if (actionsOnBar[1]) setProps(actionsOnBar[1], { Icon: 'person' });
   if (state === 'Loading') {
     put(body, use('Loading', { Type: 'Skeleton' }, null, 'Loading · Skeleton'), 'FILL');
   } else if (state === 'Registration closed') {
@@ -1610,6 +1608,10 @@ async function scr03(state) {
   setText(search, 'Helper', state === 'Empty' ? '0 results' : '12 teams have open slots');
   const chips = frame('Filter chips', { dir: 'h', gap: 'space-8', clip: true });
   put(body, chips, 'FILL');
+  // Critique C-02 (accepted): wrap the four chips instead of cutting "Web" off at the edge.
+  chips.clipsContent = false;
+  chips.layoutWrap = 'WRAP';
+  bind(chips, 'counterAxisSpacing', 'space-8');
   put(chips, chip('Open slots', true));
   put(chips, chip('AI / ML', false));
   put(chips, chip('Mobile', false));
@@ -1707,6 +1709,10 @@ async function scr05(state) {
   }
   put(s.f, use('Bottom Nav', { Selected: 'My Group' }, null, 'Bottom Nav'), 'FILL');
   if (state === 'Joined · no leader yet') floatSnackbar(s.f, 'You joined Team AI-04.', null);
+  // Critique C-05 (modified): Leave Group stays visible but needs a destructive confirmation.
+  if (state === 'Leave dialog') {
+    overlay(s.f, dialog('Destructive', 'Leave Team AI-04?', 'The team drops to 3 of 5 members and can no longer lock. You would have to find a new team before 15 Oct, 17:00.', 'Leave Team', 'Stay in Team', 'warning'));
+  }
   return s.f;
 }
 
@@ -1735,7 +1741,8 @@ async function scr06(state) {
   const list = frame('Candidates', { dir: 'v', gap: 'space-12' });
   put(body, list, 'FILL');
   MEMBERS.forEach((m, idx) => {
-    const meta = votes[idx];
+    // Critique C-01 (accepted): tallies stay hidden until you have voted, to avoid a bandwagon effect.
+    const meta = submitted ? votes[idx] : '';
     put(list, candidate(m, idx === chosen ? 'Selected' : 'Default', meta), 'FILL');
   });
   const bar = await actionBar(s.f);
@@ -1802,6 +1809,8 @@ async function scr07(state) {
   } else if (locked) {
     put(bar, button('Primary', 'Default', 'Back to My Group'), 'FILL');
   } else {
+    // Critique C-06 (modified): name every member right above the irreversible action.
+    put(bar, await text('Locking: Ha (leader), Minh, Bao, Huy', 'body', 'on-surface-variant', { name: 'Hint' }), 'FILL');
     put(bar, button('Primary', 'Default', 'Lock Team Roster', 'lock'), 'FILL');
   }
 
@@ -1908,7 +1917,7 @@ const SCREENS = [
   ['SCR_04 Group Detail', 'Flow 1 · inspect the roster and join. Back returns to SCR_03.', scr04,
     ['Default', 'Join dialog', 'Joining', 'Team full']],
   ['SCR_05 My Group Hub', 'Top-level tab (My Group). End of Flow 1, start/end of Flows 2 and 3.', scr05,
-    ['Joined · no leader yet', 'Leader elected (leader view)', 'Locked', 'Loading']],
+    ['Joined · no leader yet', 'Leader elected (leader view)', 'Leave dialog', 'Locked', 'Loading']],
   ['SCR_06 Leader Voting', 'Flow 2 · Vote for a leader. Nested under My Group; Back returns to SCR_05.', scr06,
     ['Default', 'Selected', 'Submitting', 'Submitted', 'Change vote dialog', 'Loading', 'Error']],
   ['SCR_07 Lock Team Roster', 'Flow 3 · Lock the roster, with the < 4 members error and its recovery path.', scr07,
