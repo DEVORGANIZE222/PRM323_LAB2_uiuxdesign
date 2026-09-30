@@ -2,8 +2,8 @@
 **PRM323 — Lab 2: AI-Assisted UI/UX Design (Google Stitch → Figma)**
 
 - **Group Name:** Group8
-- **Class:** SE196624
-- **Figma File (Public View Link):** `https://www.figma.com/design/Z42q9LamOZojK54FSBDcCd/PRM_LAB2?node-id=1-6&t=BbIncMZGSu1fgmSM-1` *
+- **Class:** SE1920
+- **Figma File (Public View Link):** `https://www.figma.com/design/Z42q9LamOZojK54FSBDcCd/PRM_LAB2?node-id=1-6&t=BbIncMZGSu1fgmSM-1`
 
 ---
 
