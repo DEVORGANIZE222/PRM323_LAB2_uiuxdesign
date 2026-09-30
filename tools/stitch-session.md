@@ -9,6 +9,7 @@ Take a screenshot by selecting the screen in Stitch → **Export → PNG**, or w
 ## Step 0: the initial output (already in the project)
 
 Screenshot the two screens that the initial prompt produced (Browse Groups and My Group Hub) and the design-system card:
+- Already in the repo: `assets/stitch/initial_generation.png` (added by Hoàng). Add these only if you want separate shots:
 - `assets/stitch/00-initial-design-system.png`
 - `assets/stitch/00-initial-browse-groups.png`
 - `assets/stitch/00-initial-my-group-hub.png`

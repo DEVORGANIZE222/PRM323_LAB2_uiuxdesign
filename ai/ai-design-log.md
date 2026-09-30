@@ -111,7 +111,7 @@ Project: *Remix of CapstoneMatch UI Design* (`stitch.withgoogle.com/projects/347
 
 | Step | Named problem | Prompt (verbatim, as sent) | What Stitch returned | Screenshots |
 |---|---|---|---|---|
-| 0 · Initial | — | §2 above | _to fill_ | `00-initial-*.png` |
+| 0 · Initial | — | §2 above | Browse Groups and My Group Hub screens plus the design-system card | [`initial_generation.png`](../assets/stitch/initial_generation.png) |
 | 1 · Generate SCR_06, SCR_07 | Screens for Flows 2 and 3 were missing | _paste_ | _to fill_ | `01-generated-*.png` |
 | Iteration 1 | Primary button contrast 2.95:1 | _paste_ | _to fill_ | `it1-before-browse.png`, `it1-after-browse.png` |
 | Iteration 2 | No error or recovery state for fewer than 4 members | _paste_ | _to fill_ | `it2-before-scr07.png`, `it2-after-scr07.png` |
