@@ -1,5 +1,7 @@
 # Stitch session: prompts to run and screenshots to save
 
+> **Status:** run on 30 Sep 2026. The prompts actually sent (iteration 3 was changed to the problem Stitch really showed) and the results are in `ai/ai-design-log.md` §6. The screenshots are in `assets/stitch/`.
+
 Run these prompts in your own Stitch project (Remix of CapstoneMatch UI Design, `stitch.withgoogle.com/projects/3478201953325536957`). Save every screenshot into `assets/stitch/` with the file name shown. Then paste the prompt exactly as you sent it into `ai/ai-design-log.md` §6 and describe what Stitch actually returned.
 
 Take a screenshot by selecting the screen in Stitch → **Export → PNG**, or with a full-screen capture (Win + Shift + S).
