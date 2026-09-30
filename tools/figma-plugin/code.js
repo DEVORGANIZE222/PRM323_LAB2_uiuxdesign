@@ -369,19 +369,22 @@ function variantOf(set, vp) {
 function setProps(inst, props) {
   const defs = inst.componentProperties;
   const out = {};
+  let iconOverride = null;
   for (const k of Object.keys(props)) {
     const full = Object.keys(defs).find((d) => d === k || d.split('#')[0] === k);
-    if (!full && k === 'Icon' && ICON[props[k]]) {
-      // Sets with a per-variant icon have no Icon property: override the nested icon instead.
-      const layer = inst.findOne((n) => n.type === 'INSTANCE' && n.name === 'Icon' && !insideNestedInstance(n, inst));
-      if (layer) { layer.swapComponent(ICON[props[k]]); continue; }
-    }
+    if (!full && k === 'Icon' && ICON[props[k]]) { iconOverride = ICON[props[k]]; continue; }
     if (!full) { warn('property "' + k + '" not on ' + inst.name); continue; }
     let val = props[k];
     if (defs[full].type === 'INSTANCE_SWAP' && typeof val === 'string' && ICON[val]) val = ICON[val].id;
     out[full] = val;
   }
   if (Object.keys(out).length) inst.setProperties(out);
+  if (iconOverride) {
+    // Sets with a per-variant icon have no Icon property: override the nested icon instead,
+    // after any variant switch (switching variant resets the icon to that variant's default).
+    const layer = inst.findOne((n) => n.type === 'INSTANCE' && n.name === 'Icon' && !insideNestedInstance(n, inst));
+    if (layer) layer.swapComponent(iconOverride); else warn('no Icon layer on ' + inst.name);
+  }
   return inst;
 }
 
