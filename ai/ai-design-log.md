@@ -162,6 +162,17 @@ Before/after: `it3-before-scr06.png` → `it3-after-scr06.png`.
 
 The final canvas after the session: `99-final-canvas.png`.
 
+**Screenshots of each prompt as sent and Stitch's reply** (the agent log on the left of each reply image):
+
+| Step | Prompt in the input box | Stitch's reply |
+|---|---|---|
+| 1 · Generate SCR_06, SCR_07 | `01-prompt-generate-scr06-scr07.png` | `01-stitch-reply.png` |
+| Iteration 1 | `it1-prompt.png` | `it1-stitch-reply.png` |
+| Iteration 2 | `it2-prompt.png` | `it2-stitch-reply.png` |
+| Iteration 3 | `it3-prompt.png` | `it3-stitch-reply.png` |
+
+A long prompt scrolls inside the input box, so the screenshot shows its end; the full text is the code block above.
+
 ---
 
 ## 7. AI critique, round 2 (Claude, on the Figma final UI)
