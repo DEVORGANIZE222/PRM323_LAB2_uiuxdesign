@@ -12,7 +12,8 @@
  */
 'use strict';
 
-const KEY = 'cm';
+const NS = 'capstonematch'; // shared plugin data namespace (works without a published plugin id)
+const KEY = 'stage';
 const PAGES = ['01 User Flow', '02 Wireframe', '03 Final UI', '04 Design System', '05 Components', '06 Prototype'];
 const warnings = [];
 function warn(msg) {
@@ -350,7 +351,7 @@ function rect(name, w, h, color, rad) {
   return r;
 }
 
-function tag(node, stage) { node.setPluginData(KEY, stage); return node; }
+function tag(node, stage) { node.setSharedPluginData(NS, KEY, stage); return node; }
 
 /* ---------------------------- components: create / instance -------------------------------- */
 function variantOf(set, vp) {
@@ -469,13 +470,13 @@ async function gotoPage(name) {
 }
 
 function clearGenerated(page, stage) {
-  for (const n of page.children.slice()) if (n.getPluginData(KEY) === stage) n.remove();
+  for (const n of page.children.slice()) if (n.getSharedPluginData(NS, KEY) === stage) n.remove();
 }
 
 function rightEdge(page, stage) {
   let max = null;
   for (const n of page.children) {
-    if (n.getPluginData(KEY) === stage) continue;
+    if (n.getSharedPluginData(NS, KEY) === stage) continue;
     max = Math.max(max === null ? -Infinity : max, n.x + n.width);
   }
   return max === null ? 0 : max + 400;
@@ -487,7 +488,7 @@ function rightEdge(page, stage) {
 async function loadFonts() {
   for (const k of Object.keys(WEIGHTS)) {
     const fn = { family: FAMILY, style: WEIGHTS[k] };
-    try { await figma.loadFontAsync(fn); } catch (e) { throw new Error('Font "' + FAMILY + ' ' + WEIGHTS[k] + '" is not available in this file.'); }
+    try { await figma.loadFontAsync(fn); } catch (e) { throw new Error('Cannot load font "' + FAMILY + ' ' + WEIGHTS[k] + '": ' + e.message); }
     FONT[k] = fn;
   }
 }
@@ -1226,7 +1227,7 @@ const COMPONENT_DOCS = [
 async function buildComponentsPage() {
   const page = await gotoPage('05 Components');
   await page.loadAsync();
-  if (page.children.some((n) => n.getPluginData(KEY) === 'components')) {
+  if (page.children.some((n) => n.getSharedPluginData(NS, KEY) === 'components')) {
     await loadComponents();
     figma.notify('Page 05 already has the components – kept them (delete the board to rebuild).');
     return false;
@@ -1262,14 +1263,14 @@ async function buildComponentsPage() {
   const ids = { icons: {}, components: {} };
   for (const k of Object.keys(ICON)) ids.icons[k] = ICON[k].id;
   for (const k of Object.keys(C)) ids.components[k] = C[k].id;
-  figma.root.setPluginData('cm-ids', JSON.stringify(ids));
+  figma.root.setSharedPluginData(NS, 'ids', JSON.stringify(ids));
   figma.viewport.scrollAndZoomIntoView([root]);
   return true;
 }
 
 async function loadComponents() {
   if (Object.keys(C).length) return;
-  const raw = figma.root.getPluginData('cm-ids');
+  const raw = figma.root.getSharedPluginData(NS, 'ids');
   if (!raw) throw new Error('No components yet – run "2 · Components" first.');
   const ids = JSON.parse(raw);
   for (const k of Object.keys(ids.icons)) {
