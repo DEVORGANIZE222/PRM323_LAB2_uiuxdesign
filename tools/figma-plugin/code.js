@@ -891,7 +891,7 @@ async function buildCard() {
     const col = frame('Text', { dir: 'v', gap: 'space-4' });
     put(c, col, 'FILL');
     const title = put(col, await text('Nguyen Van Minh', 'subtitle', 'on-surface', { name: 'Title' }), 'FILL'); truncate(title);
-    put(col, await text('Backend · Spring Boot', 'body', 'on-surface-variant', { name: 'Subtitle' }), 'FILL');
+    const sub = put(col, await text('Backend · Spring Boot', 'body', 'on-surface-variant', { name: 'Subtitle' }), 'FILL'); truncate(sub);
     put(c, await text('1 vote', 'label', 'on-surface-variant', { name: 'Meta' }));
     const radio = put(c, icon(s[3], s[4])); radio.name = 'Radio';
     try { c.minHeight = 72; } catch (e) { /* older API */ }
@@ -926,7 +926,7 @@ async function buildCard() {
     put(c, row, 'FILL');
     const lead = frame('Leading', { dir: 'h', justify: 'CENTER', align: 'CENTER', radius: 'radius-full', fill: 'info-container', w: 'size-avatar', h: 'size-avatar' });
     put(row, lead);
-    put(lead, icon('mail', 'info'));
+    const leadIcon = put(lead, icon('mail', 'info')); leadIcon.name = 'Leading icon';
     const col = frame('Text', { dir: 'v', gap: 'space-4' });
     put(row, col, 'FILL');
     const head = frame('Head', { dir: 'h', gap: 'space-8', align: 'CENTER' });
@@ -1451,7 +1451,7 @@ async function scr06(state) {
   const list = frame('Candidates', { dir: 'v', gap: 'space-12' });
   put(body, list, 'FILL');
   MEMBERS.forEach((m, idx) => {
-    const meta = votes[idx] + (submitted && idx === 1 ? ' · your vote' : '');
+    const meta = votes[idx];
     put(list, candidate(m, idx === chosen ? 'Selected' : 'Default', meta), 'FILL');
   });
   const bar = await actionBar(s.f);
@@ -1551,14 +1551,13 @@ async function scr08(state) {
   const details = frame('Queue details', { dir: 'v', gap: 'space-12', pad: 'space-16', fill: 'surface', radius: 'radius-md', stroke: 'outline-variant' });
   put(body, details, 'FILL');
   put(details, await text('Your queue details', 'subtitle', 'on-surface'), 'FILL');
-  const rows = [['Queue ID', 'RP-2026-0142'], ['Preferred roles', 'Backend · Mobile'], ['Skills', 'Java, Spring Boot, Flutter'], ['Last checked', state === 'Refreshing' ? 'Checking now…' : '2 min ago']];
+  const rows = [['Queue ID', 'RP-2026-0142'], ['Preferred roles', 'Backend · Mobile'], ['Skills', 'Java, Spring Boot, Flutter'], ['Last checked', state === 'Refreshing' ? 'Checking now…' : '2 min ago'], ['Auto-check', 'Every 30 seconds']];
   for (const r of rows) {
     const row = frame(r[0], { dir: 'h', gap: 'space-8', justify: 'SPACE_BETWEEN' });
     put(details, row, 'FILL');
     put(row, await text(r[0], 'body', 'on-surface-variant'));
     put(row, await text(r[1], 'label', 'on-surface'));
   }
-  put(body, use('Loading', { Type: 'Spinner' }, { Message: 'Checking automatically every 30 seconds' }, 'Loading · Spinner'), 'FILL');
 
   const bar = await actionBar(s.f);
   put(bar, button('Primary', state === 'Refreshing' ? 'Loading' : 'Default', state === 'Refreshing' ? 'Refreshing…' : 'Refresh Status', state === 'Refreshing' ? null : 'refresh'), 'FILL');
