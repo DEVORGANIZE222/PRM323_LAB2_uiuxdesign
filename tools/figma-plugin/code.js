@@ -1585,7 +1585,7 @@ async function scr02(state) {
     if (state === 'Not in a team') {
       const e = put(body, use('Empty State', { Layout: 'Compact' }, { Title: "You're not in a team yet", Message: 'Teams with open slots are waiting. Join one before the deadline.', Icon: 'group' }, 'Empty State'), 'FILL');
       paintVectors(nested(e, 'Icon') || e, 'on-surface-variant');
-      setNestedButton(e, 'Action', { Label: 'Browse' });
+      setProps(e, { 'Show action': false });
       put(body, button('Primary', 'Default', 'Browse Available Teams', 'search'), 'FILL');
     } else {
       await teamHeader(body, 'Warning', 'Leader not elected', 'schedule', 4, 'Success');
@@ -1618,7 +1618,10 @@ async function scr03(state) {
     paintVectors(nested(e, 'Icon') || e, 'primary');
     setNestedButton(e, 'Action', { Label: 'Reset Filters' });
   } else {
-    for (const g of GROUPS) put(body, groupCard(g), 'FILL');
+    for (const g of GROUPS) {
+      const justFilled = state === 'Team just filled' && g.code === 'WEB-11';
+      put(body, groupCard(justFilled ? Object.assign({}, g, { slots: g.slots.concat(['KN', 'DT']), open: 0 }) : g), 'FILL');
+    }
   }
   put(s.f, use('Bottom Nav', { Selected: 'Browse' }, null, 'Bottom Nav'), 'FILL');
   if (state === 'Team just filled') floatSnackbar(s.f, 'Team WEB-11 just filled up (5/5). List refreshed.', null);
@@ -1644,6 +1647,7 @@ async function scr04(state) {
   for (const m of MEMBERS.slice(1)) put(list, member(m, 'Success', 'Confirmed', 'check-circle'), 'FILL');
   if (full) {
     put(list, member({ i: 'KD', name: 'Khuat Duy', id: 'SE182990', role: 'Backend · Node.js' }, 'Success', 'Confirmed', 'check-circle'), 'FILL');
+    put(list, member({ i: 'NA', name: 'Ngo An', id: 'SE183011', role: 'Frontend · React' }, 'Success', 'Confirmed', 'check-circle'), 'FILL');
   } else {
     put(list, openSlot('Looking for: Backend · Spring Boot'), 'FILL');
     put(list, openSlot('Optional 5th member'), 'FILL');
@@ -1685,9 +1689,11 @@ async function scr05(state) {
   const list = frame('Members', { dir: 'v', gap: 'space-12' });
   put(body, list, 'FILL');
   const order = [MEMBERS[1], MEMBERS[0], MEMBERS[2], MEMBERS[3]];
+  // The leader view is Tran Thu Ha's phone (only the leader can lock); other states are Minh's.
   for (const m of order) {
-    if (m.i === 'TH' && (elected || locked)) put(list, member(m, 'Primary', 'Leader', 'star'), 'FILL');
-    else if (m.i === 'NM') put(list, member(m, 'Info', 'You', 'person'), 'FILL');
+    if (m.i === 'TH' && elected) put(list, member(m, 'Primary', 'You · Leader', 'star'), 'FILL');
+    else if (m.i === 'TH' && locked) put(list, member(m, 'Primary', 'Leader', 'star'), 'FILL');
+    else if (m.i === 'NM' && !elected) put(list, member(m, 'Info', 'You', 'person'), 'FILL');
     else put(list, member(m, 'Success', locked ? 'Locked' : 'Confirmed', locked ? 'lock' : 'check-circle'), 'FILL');
   }
   if (!locked) {
