@@ -34,6 +34,8 @@ Screens to Generate (Flow 1 & Flow 3):
 
 ## 3. Three Meaningful Iterations (Targeting Specific Named Problems)
 
+> **Note (30 Sep):** the three iterations below were planned by the team before a Stitch project for SCR_06 and SCR_07 existed, and they have no screenshots. The iterations that were actually run in Stitch, with verbatim prompts and before/after screenshots, are in **§6**. Treat §6 as the evidence for the "3 meaningful iterations" requirement.
+
 ### Iteration 1: "Ambiguous Group Capacity & Hidden Action Affordance on Group Cards"
 - **Named Problem:** In the initial generation, group cards used tiny text for "3/5" and did not visually distinguish between an open group and a full group (5/5). The tap area to join was ambiguous (the whole card looked like plain static text).
 - **Prompt Sent to AI:**
@@ -107,15 +109,58 @@ Screens to Generate (Flow 1 & Flow 3):
 
 ## 6. Stitch session in our own project (evidence)
 
-Project: *Remix of CapstoneMatch UI Design* (`stitch.withgoogle.com/projects/3478201953325536957`). The prompts to run are in `tools/stitch-session.md`. Screenshots go into `assets/stitch/`.
+Project: *Remix of CapstoneMatch UI Design* (`stitch.withgoogle.com/projects/3478201953325536957`), a remix of Hoàng's initial project. Run on 30 Sep 2026 in the "Balanced" model. Claude Code typed the prompts in the team member's Chrome and took the screenshots; every prompt below is exactly the text that was sent. All images are in `assets/stitch/`.
 
-| Step | Named problem | Prompt (verbatim, as sent) | What Stitch returned | Screenshots |
-|---|---|---|---|---|
-| 0 · Initial | — | §2 above | Browse Groups and My Group Hub screens plus the design-system card | [`initial_generation.png`](../assets/stitch/initial_generation.png) |
-| 1 · Generate SCR_06, SCR_07 | Screens for Flows 2 and 3 were missing | _paste_ | _to fill_ | `01-generated-*.png` |
-| Iteration 1 | Primary button contrast 2.95:1 | _paste_ | _to fill_ | `it1-before-browse.png`, `it1-after-browse.png` |
-| Iteration 2 | No error or recovery state for fewer than 4 members | _paste_ | _to fill_ | `it2-before-scr07.png`, `it2-after-scr07.png` |
-| Iteration 3 | Small radio targets; tallies bias the vote | _paste_ | _to fill_ | `it3-before-scr06.png`, `it3-after-scr06.png` |
+**Step 0: initial output.** The initial prompt (§2) produced the design system "Academic Nexus", Browse Groups and My Group Hub.
+Evidence: `initial_generation.png` (Hoàng's original project) and `00-initial-canvas.png` (our remix before this session).
+
+**Step 1: generate the missing screens for Flows 2 and 3.**
+```text
+Using this project's design system, add two new Android screens at 360 x 800 dp for CapstoneMatch. Persona: Minh, 20, FPT Software Engineering student, uses the phone one-handed on the bus and outdoors in sunlight. 1. SCR_06 "Elect Team Leader": app bar with a back arrow, one-line explanation that only the elected leader can lock the roster, an info banner "Voting closes in 1 day 6 hours, 2 of 4 members have voted", four candidate rows (Nguyen Van Minh - Backend, Tran Thu Ha - Mobile, Le Quoc Bao - AI/ML, Pham Gia Huy - DevOps) and a pinned primary button "Submit My Vote". 2. SCR_07 "Lock Team Roster": green banner "Ready to lock: 4 of 5 members", a note that locking is permanent, the final roster with a Leader badge on Tran Thu Ha, and a pinned primary button "Lock Team Roster". Every tappable element must be at least 48 x 48 dp; body text at least 14 sp.
+```
+**Result:** two new screens, "Elect Team Leader" (390 × 1114) and "Lock Team Roster".
+- Stitch added content we did not ask for: an "Election Guidelines" card, a "Governance Checks" list and a secondary "Review Terms with Advisor" button.
+- It pre-selected Tran Thu Ha and showed a "Nominated by 2" pill.
+- The primary buttons are white on `#F27024`.
+
+Screenshots: `01-generated-scr06.png`, `01-generated-scr07.png`.
+
+**Iteration 1: named problem "primary button contrast 2.95:1" (WCAG 1.4.3).**
+```text
+Problem: the primary button labels are white on #F27024, which is only 2.95:1 contrast and fails WCAG AA for 14 sp text (for example "Submit My Vote" and "Lock Team Roster"). Change every filled primary button, the selected chip and the active bottom-navigation indicator on all screens to primary #AD4A0A with white labels (5.58:1). Keep #F27024 only for decorative elements. Do not change the layout.
+```
+**Result:** "Submit My Vote", "Lock Team Roster", the Browse "View Team" button, the "Open Slots" chip and the active nav item changed to `#AD4A0A`; the layout is unchanged.
+- **Still wrong:** the selected-candidate check mark on SCR_06 stays `#F27024`.
+- **Decision:** handled in Figma, where the selected radio uses `primary`.
+
+Before/after: `it1-before-scr06.png` → `it1-after-scr06.png`.
+
+**Iteration 2: named problem "no error / recovery state for fewer than 4 members" (H9).**
+```text
+Problem: SCR_07 has no error state. Add a new screen "Lock Team Roster - Error" for a team with only 3 of 5 members: 1. A red error banner at the top: "Can't lock yet: 3 of 5 members. FPT Capstone rules require at least 4 members." 2. Directly under it, a recovery card "Need 1 more member? Invite unassigned students from the Waiting Pool" with an outlined button "Invite from Waiting Pool" (48 dp high). 3. The roster shows 3 members (Tran Thu Ha as Leader, Nguyen Van Minh, Le Quoc Bao) plus 2 dashed "Open slot" placeholders. 4. The pinned "Lock Team Roster" button is disabled (grey) with the hint "Available when your team has 4 members".
+```
+**Result:** a new 390 × 1555 screen with the error banner, the recovery card directly under it, 3 members, two open slots, a failed governance check "3 of 4 minimum members reached (Incomplete)" and a disabled Lock button with the hint.
+- **Still wrong:** the banner title is truncated to "Can't lock yet: 3 of…", which hides the key number.
+- **Decision:** in Figma the banner title wraps instead of truncating (Banner component, SCR_07 "Error · 3 of 5").
+
+Before/after: `it2-before-scr07.png` → `it2-after-scr07-error.png`.
+
+**Iteration 3: named problem "the tally biases the vote, and a candidate is pre-selected" (persona goal: a fair election; H5).**
+
+This replaces the planned "small radio targets" iteration: Stitch's rows were already large enough, and the real problem we saw was the visible tally.
+```text
+Problem: on SCR_06 Elect Team Leader the vote tally is visible before I vote ("Nominated by 2" on Tran Thu Ha and "2 of 4 Voted"), which nudges people toward the front-runner, and Tran Thu Ha is already pre-selected. Hide all per-candidate vote counts and nomination pills until the user has submitted a vote; keep only "2 of 4 members have voted" in the banner. Start with no candidate selected, make each candidate a full-width selectable card at least 72 dp high with a radio on the right, and keep the pinned "Submit My Vote" button disabled (grey) until a card is tapped.
+```
+**Result:**
+- The "Nominated by 2" pill is gone and no card is selected.
+- The banner reads "2 of 4 members have voted".
+- "Submit My Vote" is disabled with the helper text "Select a candidate to submit your team leader vote."
+- The banner title is now truncated to "Voting close…".
+- **Decision:** the same fix as in iteration 2 is applied in Figma, where banner titles wrap.
+
+Before/after: `it3-before-scr06.png` → `it3-after-scr06.png`.
+
+The final canvas after the session: `99-final-canvas.png`.
 
 ---
 
