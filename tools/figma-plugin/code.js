@@ -368,6 +368,11 @@ function setProps(inst, props) {
   const out = {};
   for (const k of Object.keys(props)) {
     const full = Object.keys(defs).find((d) => d === k || d.split('#')[0] === k);
+    if (!full && k === 'Icon' && ICON[props[k]]) {
+      // Sets with a per-variant icon have no Icon property: override the nested icon instead.
+      const layer = inst.findOne((n) => n.type === 'INSTANCE' && n.name === 'Icon' && !insideNestedInstance(n, inst));
+      if (layer) { layer.swapComponent(ICON[props[k]]); continue; }
+    }
     if (!full) { warn('property "' + k + '" not on ' + inst.name); continue; }
     let val = props[k];
     if (defs[full].type === 'INSTANCE_SWAP' && typeof val === 'string' && ICON[val]) val = ICON[val].id;
@@ -429,23 +434,17 @@ function insideNestedInstance(node, top) {
 }
 
 // Add a component property to a set and wire it to every matching layer in every variant.
-// Wiring an instance-swap property resets every variant's icon to the property default, so
-// each variant's own icon (e.g. Badge Tone=Success → check-circle) is swapped back afterwards;
-// the swap keeps the property link, so that icon becomes the variant's default value.
+// An instance-swap property has one default for the whole set, so it is only used on sets whose
+// variants share an icon; Badge, Banner and Dialog keep a per-variant icon instead.
 async function wire(owner, propName, type, def, layerName, field) {
   const key = owner.addComponentProperty(propName, type, def);
   const variants = owner.type === 'COMPONENT_SET' ? owner.children : [owner];
   for (const v of variants) {
     const layers = v.findAll((n) => n.name === layerName && !insideNestedInstance(n, v));
     for (const l of layers) {
-      const original = field === 'mainComponent' ? await l.getMainComponentAsync() : null;
       const refs = Object.assign({}, l.componentPropertyReferences || {});
       refs[field] = key;
       try { l.componentPropertyReferences = refs; } catch (e) { warn('wire ' + propName + ' on ' + v.name + ': ' + e.message); }
-      if (original) {
-        const now = await l.getMainComponentAsync();
-        if (now && now.id !== original.id) l.swapComponent(original);
-      }
     }
   }
   return key;
@@ -812,7 +811,6 @@ async function buildBadge() {
   const set = combine(list, 'Badge', 3);
   await wire(set, 'Label', 'TEXT', 'Badge', 'Label', 'characters');
   await wire(set, 'Show icon', 'BOOLEAN', true, 'Icon', 'visible');
-  await wire(set, 'Icon', 'INSTANCE_SWAP', ICON.info.id, 'Icon', 'mainComponent');
   C.Badge = set;
   return set;
 }
@@ -985,7 +983,6 @@ async function buildBanner() {
   await wire(set, 'Title', 'TEXT', 'Title', 'Title', 'characters');
   await wire(set, 'Body', 'TEXT', 'Supporting message in plain language.', 'Body', 'characters');
   await wire(set, 'Show body', 'BOOLEAN', true, 'Body', 'visible');
-  await wire(set, 'Icon', 'INSTANCE_SWAP', ICON.info.id, 'Icon', 'mainComponent');
   C.Banner = set;
   return set;
 }
@@ -1062,7 +1059,6 @@ async function buildDialog() {
   const set = combine(list, 'Dialog');
   await wire(set, 'Title', 'TEXT', 'Dialog title', 'Title', 'characters');
   await wire(set, 'Body', 'TEXT', 'Explain what will happen in plain language.', 'Body', 'characters');
-  await wire(set, 'Icon', 'INSTANCE_SWAP', ICON.info.id, 'Icon', 'mainComponent');
   C.Dialog = set;
   return set;
 }
@@ -1220,14 +1216,14 @@ const COMPONENT_DOCS = [
   ['Icons', 'Material Symbols as components (Icon/…). Vectors are filled with Color variables; instances recolor per context. Used through Instance Swap properties.', 'Icon(Icons.…, size: 24)'],
   ['Icon Button', 'State: Default, Pressed. 48 × 48 dp touch target around a 24 dp glyph. Property: Icon (swap).', 'IconButton'],
   ['Avatar', 'Type: Initials, Open slot (dashed, "+"). Property: Initials.', 'CircleAvatar'],
-  ['Badge', 'Tone: Neutral, Primary, Success, Warning, Error, Info. Always icon + text, never color alone (WCAG 1.4.1). Properties: Label, Show icon, Icon.', 'Chip / custom StatusBadge'],
+  ['Badge', 'Tone: Neutral, Primary, Success, Warning, Error, Info. Always icon + text, never color alone (WCAG 1.4.1). Properties: Label, Show icon. Icon follows Tone (swap the nested Icon layer to override).', 'Chip / custom StatusBadge'],
   ['Button', '① Type: Primary, Secondary (outlined), Destructive, Text × State: Default, Pressed, Disabled, Loading. Height = size-button (48). Properties: Label, Show icon, Icon.', 'FilledButton / OutlinedButton / FilledButton(error) / TextButton'],
   ['Text Field', '② State: Default, Focused, Filled, Error, Disabled. Error shows icon + message, not only a red border. Properties: Label, Show leading icon, Leading icon.', 'TextFormField + InputDecoration(OutlineInputBorder)'],
   ['Card', '③ Type: Selectable (Default, Pressed, Selected), Member, Open slot, Notification (Default, Unread, Pressed), Info (Default, Pressed). Min height 72. Properties: Title, Subtitle, Body, Meta, Time, Show meta/badge/actions/action, Icon.', 'Card + InkWell / ListTile'],
-  ['Banner', 'Tone: Info, Success, Warning, Error. Inline status message above content. Properties: Title, Body, Show body, Icon.', 'MaterialBanner-style Container'],
+  ['Banner', 'Tone: Info, Success, Warning, Error. Inline status message above content. Properties: Title, Body, Show body. Icon follows Tone.', 'MaterialBanner-style Container'],
   ['Navigation', '④ Nav Item (State: Selected, Unselected) and Bottom Nav (Selected: Home, Browse, My Group, Alerts). Selected = indicator pill + dark label, not color only.', 'NavigationBar + NavigationDestination'],
   ['App Bar', '⑤ Type: Default, Back, Actions (two icon actions). Height 64. Property: Title.', 'AppBar(toolbarHeight: 64)'],
-  ['Dialog', '⑥ Type: Confirmation, Destructive. Buttons stacked full width (confirm on top) so long labels never truncate on 360 dp. Properties: Title, Body, Icon.', 'AlertDialog'],
+  ['Dialog', '⑥ Type: Confirmation, Destructive. Buttons stacked full width (confirm on top) so long labels never truncate on 360 dp. Properties: Title, Body. Icon follows Type (info / warning).', 'AlertDialog'],
   ['Loading', '⑦ Type: Skeleton (list), Spinner (inline), Overlay (blocking action). Property: Message.', 'Shimmer skeleton / CircularProgressIndicator'],
   ['Empty State', '⑧ Layout: Screen, Compact. Illustration icon + message + one action. Properties: Title, Message, Show action, Icon.', 'Column(Icon, Text, FilledButton)'],
   ['Error State', '⑨ Layout: Screen, Inline. Message, cause in plain language, retry action. Properties: Title, Cause.', 'Column(Icon, Text, FilledButton.icon)'],
