@@ -1,0 +1,16 @@
+{
+  "name": "CapstoneMatch DS Builder",
+  "id": "capstonematch-ds-builder",
+  "api": "1.0.0",
+  "main": "code.js",
+  "editorType": ["figma"],
+  "documentAccess": "dynamic-page",
+  "networkAccess": { "allowedDomains": ["none"] },
+  "menu": [
+    { "name": "1 · Design System (trang 04)", "command": "tokens" },
+    { "name": "2 · Components (trang 05)", "command": "components" },
+    { "name": "3 · Final UI SCR_06 → SCR_09 (trang 03)", "command": "screens" },
+    { "separator": true },
+    { "name": "Chạy cả 3 bước", "command": "all" }
+  ]
+}
